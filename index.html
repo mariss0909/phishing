@@ -1,0 +1,2121 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#160d12">
+	<title>Phishing Detector | Message security</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			color-scheme: dark;
+			--bg: #160d12;
+			--surface: #21151c;
+			--surface-raised: #291b23;
+			--line: #3b2932;
+			--text: #f7edf1;
+			--muted: #ae9ca4;
+			--muted-strong: #d0bfc6;
+			--wine: #8e2845;
+			--wine-light: #ef829c;
+			--green: #8fe0b8;
+			--amber: #f3c476;
+			--red: #ff8b9d;
+			--mono: "DM Mono", Consolas, monospace;
+			--sans: "Manrope", "Segoe UI", sans-serif;
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			min-width: 320px;
+			min-height: 100vh;
+			color: var(--text);
+			background-color: var(--bg);
+			background-image: radial-gradient(ellipse at 82% 0%, rgba(111, 30, 54, .2), transparent 35%), linear-gradient(135deg, transparent 0 49.8%, rgba(255,255,255,.018) 50%, transparent 50.2%);
+			background-size: auto, 42px 42px;
+			font-family: var(--sans);
+		}
+		button, textarea { font: inherit; }
+		button { color: inherit; }
+		.app-shell { width: min(1320px, 100%); margin: 0 auto; padding: 0 42px 44px; }
+		.topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(174,156,164,.16); }
+		.brand { display: flex; gap: 12px; align-items: center; text-decoration: none; color: var(--text); }
+		.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #a84761; border-radius: 10px; color: #ffc1cf; background: linear-gradient(145deg, #76213a, #401929); box-shadow: 0 0 24px rgba(142,40,69,.3); font-size: 17px; font-weight: 800; }
+		.brand-name { font-size: 14px; font-weight: 800; letter-spacing: .08em; }
+		.brand-sub { margin-top: 2px; color: var(--muted); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+		.top-status { display: flex; align-items: center; gap: 9px; color: var(--muted-strong); font: 11px var(--mono); }
+		.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px rgba(143,224,184,.55); }
+		.nav-toggle { display: none; align-items: center; justify-content: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 8px; background: rgba(15,10,13,.66); color: var(--text); font-size: 18px; cursor: pointer; }
+		.main-nav { display: flex; gap: 6px; margin-top: 19px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+		.nav-link { position: relative; min-height: 42px; padding: 0 13px; border: 0; color: var(--muted); background: transparent; font-size: 11px; font-weight: 700; cursor: pointer; }
+		.nav-link:hover { color: var(--text); }
+		.nav-link[aria-current="page"] { color: #ffc1cf; }
+		.nav-link[aria-current="page"]::after { position: absolute; right: 10px; bottom: -1px; left: 10px; height: 2px; background: var(--wine-light); content: ""; }
+		.nav-overlay { position: fixed; inset: 0; z-index: 30; display: none; background: rgba(8,5,7,.5); }
+		.nav-overlay.is-visible { display: block; }
+		.app-view[hidden] { display: none; }
+		.intro { padding: 48px 0 27px; animation: arrive .5s ease-out both; }
+		.eyebrow { color: var(--wine-light); font: 11px var(--mono); letter-spacing: .16em; text-transform: uppercase; }
+		h1 { margin: 12px 0 9px; font-size: clamp(28px, 4vw, 39px); line-height: 1.16; letter-spacing: 0; }
+		.intro p { max-width: 660px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.75; }
+		.workspace { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(275px, .85fr); align-items: start; gap: 18px; }
+		.panel { border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(155deg, rgba(41,27,35,.96), rgba(29,19,25,.98)); box-shadow: 0 20px 55px rgba(0,0,0,.18); }
+		.scanner { padding: 24px; animation: arrive .55s .06s ease-out both; }
+		.panel-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+		h2 { margin: 0; font-size: 16px; font-weight: 700; }
+		.panel-kicker { margin-top: 5px; color: var(--muted); font-size: 12px; }
+		.local-tag { flex: 0 0 auto; padding: 6px 9px; border: 1px solid rgba(143,224,184,.25); border-radius: 5px; color: var(--green); font: 10px var(--mono); }
+		.field-label { display: block; margin: 25px 0 9px; color: var(--muted-strong); font-size: 12px; font-weight: 700; }
+		textarea { width: 100%; min-height: 190px; resize: vertical; padding: 15px; border: 1px solid #49323d; border-radius: 6px; outline: none; color: var(--text); background: #180f14; font-size: 13px; line-height: 1.7; transition: border-color .18s, box-shadow .18s; }
+		textarea::placeholder { color: #806e77; }
+		textarea:focus { border-color: #be536e; box-shadow: 0 0 0 3px rgba(190,83,110,.12); }
+		.sender-entry { margin-top: 18px; }
+		.sender-entry .field-label { margin: 0 0 8px; }
+		.sender-input { width: 100%; height: 42px; padding: 0 12px; border: 1px solid #49323d; border-radius: 5px; outline: none; color: var(--text); background: #180f14; font-size: 12px; }
+		.sender-input::placeholder { color: #806e77; }
+		.sender-input:focus { border-color: #be536e; box-shadow: 0 0 0 3px rgba(190,83,110,.12); }
+		.sender-help { margin-top: 6px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+		.field-meta { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font: 10px var(--mono); }
+		.actions { display: flex; align-items: center; gap: 10px; margin-top: 17px; }
+		.primary, .secondary, .sample { min-height: 40px; border-radius: 5px; cursor: pointer; transition: transform .15s, border-color .15s, background .15s; }
+		.primary { display: inline-flex; justify-content: center; align-items: center; gap: 9px; min-width: 148px; padding: 0 16px; border: 1px solid #a33c59; background: #812641; color: white; font-size: 12px; font-weight: 800; }
+		.primary:hover { background: #98314f; transform: translateY(-1px); }
+		.primary:disabled { opacity: .6; cursor: wait; transform: none; }
+		.secondary { padding: 0 13px; border: 1px solid var(--line); background: transparent; color: var(--muted-strong); font-size: 12px; }
+		.secondary:hover, .sample:hover { border-color: #9e4961; color: var(--text); }
+		button:focus-visible { outline: 2px solid #f096ab; outline-offset: 3px; }
+		.shortcut { margin-left: auto; color: var(--muted); font: 10px var(--mono); }
+		.result { display: none; margin-top: 21px; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: rgba(15,10,13,.6); animation: arrive .25s ease-out both; }
+		.result.visible { display: block; }
+		.result-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+		.result-title { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 800; }
+		.result-icon { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; font-size: 14px; }
+		.result-score { color: var(--muted); font: 10px var(--mono); }
+		.analysis-time { margin: 5px 0 0 37px; color: var(--muted); font: 10px var(--mono); }
+		.result-summary { margin: 9px 0 0 37px; color: var(--muted-strong); font-size: 12px; line-height: 1.65; }
+		.signals { display: grid; gap: 7px; margin: 13px 0 0 37px; padding: 0; list-style: none; }
+		.signals li { display: grid; gap: 4px; padding: 10px 11px; border-left: 2px solid var(--amber); background: rgba(243,196,118,.06); color: var(--muted); font-size: 11px; line-height: 1.55; }
+		.signals li.signal-danger { border-color: var(--red); background: rgba(255,139,157,.06); }
+		.signals li.signal-info { border-color: var(--green); background: rgba(143,224,184,.06); }
+		.signals li strong { color: var(--muted-strong); font-size: 11px; }
+		.signals li .signal-next { color: var(--text); }
+		.sender-result { margin: 15px 0 0 37px; padding-top: 12px; border-top: 1px solid var(--line); }
+		.sender-result-title { margin: 0; color: var(--muted-strong); font-size: 11px; }
+		.sender-result-detail { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+		.sender-source { display: inline-block; margin: 7px 9px 0 0; }
+		.response-panel { margin: 15px 0 0 37px; padding-top: 12px; border-top: 1px solid var(--line); }
+		.response-panel h3 { margin: 0; color: var(--muted-strong); font-size: 11px; }
+		.response-panel ul { display: grid; gap: 6px; margin: 8px 0 0; padding-left: 16px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+		.report-actions { display: flex; align-items: center; gap: 10px; margin: 14px 0 0 37px; }
+		.report-status { color: var(--muted); font-size: 10px; line-height: 1.5; }
+		.risk-label { padding: 5px 8px; border: 1px solid currentColor; border-radius: 4px; font: 10px var(--mono); }
+		.verdict-danger .risk-label { color: var(--red); }
+		.verdict-warning .risk-label { color: var(--amber); }
+		.verdict-clear .risk-label { color: var(--green); }
+		.verdict-safe .risk-label { color: var(--green); }
+		.verdict-danger { border-color: rgba(255,139,157,.38); }
+		.verdict-danger .result-icon { color: var(--red); background: rgba(255,139,157,.13); }
+		.verdict-danger .result-title { color: var(--red); }
+		.verdict-warning { border-color: rgba(243,196,118,.35); }
+		.verdict-warning .result-icon { color: var(--amber); background: rgba(243,196,118,.12); }
+		.verdict-warning .result-title { color: var(--amber); }
+		.verdict-clear { border-color: rgba(143,224,184,.3); }
+		.verdict-clear .result-icon { color: var(--green); background: rgba(143,224,184,.12); }
+		.verdict-clear .result-title { color: var(--green); }
+		.verdict-safe { border-color: rgba(143,224,184,.45); }
+		.verdict-safe .result-icon { color: var(--green); background: rgba(143,224,184,.12); }
+		.verdict-safe .result-title { color: var(--green); }
+		.side-column { display: grid; gap: 18px; animation: arrive .55s .12s ease-out both; }
+		.side-panel { padding: 21px; }
+		.side-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 17px; }
+		.side-title h2 { font-size: 13px; }
+		.micro-label { color: var(--muted); font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+		.signal-list { display: grid; gap: 15px; }
+		.signal-row { display: grid; grid-template-columns: 29px 1fr; align-items: start; gap: 10px; }
+		.signal-icon { display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid #513340; border-radius: 6px; color: #ef9caf; background: rgba(142,40,69,.15); font: 11px var(--mono); }
+		.signal-name { color: var(--muted-strong); font-size: 11px; font-weight: 700; }
+		.signal-desc { margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+		.sample-list { display: grid; gap: 8px; }
+		.sample { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 0 10px; border: 1px solid var(--line); background: #1b1117; color: var(--muted-strong); text-align: left; font-size: 10px; }
+		.sample span:last-child { color: var(--wine-light); font: 10px var(--mono); }
+		.privacy-note { display: flex; gap: 10px; padding: 13px; border-left: 2px solid #754052; background: rgba(116,42,66,.12); color: var(--muted); font-size: 10px; line-height: 1.6; }
+		.privacy-note strong { color: var(--muted-strong); }
+		.contacts-panel { margin-top: 18px; padding: 23px; animation: arrive .55s .18s ease-out both; }
+		.contacts-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+		.contacts-heading h2 { font-size: 16px; }
+		.contacts-heading p { max-width: 680px; margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.65; }
+		.contacts-count { flex: 0 0 auto; padding: 6px 9px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted-strong); font: 10px var(--mono); }
+		.contact-form { display: grid; grid-template-columns: 1.2fr .8fr 1.5fr auto; gap: 11px; margin-top: 19px; }
+		.form-field { min-width: 0; }
+		.form-field.source-field { grid-column: span 3; }
+		.form-field label { display: block; margin-bottom: 6px; color: var(--muted-strong); font-size: 10px; font-weight: 700; }
+		.form-field input, .form-field select { width: 100%; height: 39px; padding: 0 10px; border: 1px solid #49323d; border-radius: 5px; outline: none; color: var(--text); background: #180f14; font: 11px var(--sans); }
+		.form-field input::placeholder { color: #806e77; }
+		.form-field input:focus, .form-field select:focus { border-color: #be536e; box-shadow: 0 0 0 3px rgba(190,83,110,.12); }
+		.form-actions { display: flex; align-items: end; }
+		.form-actions .primary { width: 100%; min-width: 0; }
+		.match-list, .saved-contacts { display: grid; gap: 8px; margin-top: 12px; }
+		.saved-contact { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 5px; background: rgba(15,10,13,.4); }
+		.saved-contact-main { display: grid; gap: 6px; min-width: 0; }
+		.saved-contact-title { color: var(--text); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+		.saved-contact-domain { color: var(--muted-strong); font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+		.saved-contact-detail { display: block; margin-top: 0; color: var(--text); font: 12px var(--mono); overflow-wrap: anywhere; text-decoration-color: #754052; text-underline-offset: 2px; }
+		.saved-contact-detail-row { display: flex; align-items: center; gap: 8px; }
+		.saved-contact-detail-row .saved-contact-detail { flex: 1 1 auto; }
+		.saved-contact-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0; }
+		.contact-badge { padding: 3px 6px; border: 1px solid #513340; border-radius: 3px; color: #e99aae; font: 10px var(--mono); }
+		.contact-badge-placeholder { border-color: rgba(243,196,118,.45); color: var(--amber); }
+		.contact-source { color: var(--muted-strong); font-size: 10px; text-decoration-color: #754052; text-underline-offset: 2px; }
+		.contact-actions { display: flex; justify-content: flex-end; align-items: center; gap: 7px; margin-top: 2px; }
+		.contact-edit { min-height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted-strong); background: transparent; font-size: 10px; cursor: pointer; }
+		.contact-edit:hover { border-color: #9e4961; color: var(--text); }
+		.contact-remove { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); background: transparent; cursor: pointer; }
+		.contact-remove:hover { border-color: var(--red); color: var(--red); }
+		.contact-footnote.contact-notice { padding: 9px 11px; border-left: 2px solid var(--green); background: rgba(143,224,184,.06); color: var(--muted-strong); }
+		.contact-footnote.contact-notice-error { border-color: var(--red); background: rgba(255,139,157,.06); }
+		.empty-contacts { margin-top: 13px; padding: 13px; border: 1px dashed var(--line); color: var(--muted); font-size: 10px; line-height: 1.6; }
+		.contact-footnote { margin: 12px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+		.directory-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) 210px auto; gap: 10px; margin-top: 18px; }
+		.directory-toolbar input, .directory-toolbar select { min-width: 0; height: 40px; padding: 0 11px; border: 1px solid #49323d; border-radius: 5px; outline: none; color: var(--text); background: #180f14; font: 11px var(--sans); }
+		.directory-toolbar input:focus, .directory-toolbar select:focus { border-color: #be536e; box-shadow: 0 0 0 3px rgba(190,83,110,.12); }
+		.directory-list { display: grid; gap: 9px; margin-top: 14px; }
+		.directory-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 5px; background: rgba(15,10,13,.35); }
+		.directory-name { color: var(--text); font-size: 13px; font-weight: 800; }
+		.directory-meta { margin-top: 4px; color: var(--muted); font: 9px var(--mono); }
+		.directory-channels { display: grid; gap: 6px; margin-top: 9px; }
+		.directory-channel { display: flex; flex-wrap: wrap; gap: 7px; color: var(--muted-strong); font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
+		.directory-channel strong { min-width: 75px; color: var(--muted); font: 9px var(--mono); text-transform: uppercase; }
+		.directory-channel a { color: #ffc1cf; text-decoration-color: #754052; text-underline-offset: 2px; }
+		.directory-note { margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+		.directory-source { align-self: start; color: var(--muted-strong); font-size: 10px; white-space: nowrap; text-decoration-color: #754052; text-underline-offset: 2px; }
+		.official-contacts-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 25px; padding-top: 17px; border-top: 1px solid var(--line); }
+		.official-contacts-heading h3 { margin: 0; color: var(--text); font-size: 14px; }
+		.ai-review-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 0 37px; }
+		.ai-review-consent { display: flex; align-items: flex-start; gap: 8px; max-width: 560px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+		.ai-review-consent input { flex: 0 0 auto; margin: 2px 0 0; accent-color: #be536e; }
+		.ai-review-result { margin: 11px 0 0 37px; padding: 12px; border-left: 2px solid var(--wine-light); background: rgba(15,10,13,.42); color: var(--muted-strong); font-size: 11px; line-height: 1.6; }
+		.ai-review-result[hidden] { display: none; }
+		.ai-review-result h3 { margin: 0; color: var(--text); font-size: 12px; }
+		.ai-review-result p { margin: 7px 0 0; }
+		.ai-review-result ul { display: grid; gap: 6px; margin: 8px 0 0; padding-left: 17px; }
+		.reports-panel { padding: 23px; }
+		.report-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: rgba(15,10,13,.4); }
+		.report-card-title { color: var(--text); font-size: 11px; font-weight: 700; }
+		.report-card-meta { margin-top: 4px; color: var(--muted); font: 10px var(--mono); }
+		.report-card-signals { display: grid; gap: 7px; margin: 9px 0 0; padding-left: 17px; color: var(--muted-strong); font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+		.report-disclaimer { margin-top: 15px; }
+		.stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 17px; }
+		.stat-cell { padding: 12px; border: 1px solid var(--line); background: rgba(15,10,13,.35); }
+		.stat-label { color: var(--muted); font: 9px var(--mono); text-transform: uppercase; }
+		.stat-value { display: block; margin-top: 7px; color: var(--text); font-size: 20px; font-weight: 800; }
+		.pattern-summary { margin-top: 11px; color: var(--muted-strong); font-size: 11px; line-height: 1.6; }
+		.remote-scan { display: none; margin: 16px 0 0 37px; padding: 13px; border: 1px solid var(--line); border-radius: 5px; background: rgba(15,10,13,.45); }
+		.remote-scan-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+		.remote-scan-title { color: var(--muted-strong); font-size: 11px; font-weight: 700; }
+		.remote-scan-status { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+		.remote-scan .secondary { min-height: 34px; font-size: 10px; }
+		.remote-scan-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+		.remote-result { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
+		.remote-result[hidden], .remote-preview[hidden] { display: none; }
+		.remote-verdict { color: var(--muted-strong); font-size: 11px; font-weight: 800; }
+		.remote-details { display: grid; gap: 5px; margin-top: 7px; color: var(--muted); font-size: 10px; line-height: 1.55; overflow-wrap: anywhere; }
+		.remote-preview { display: block; width: min(100%, 560px); max-height: 370px; object-fit: contain; object-position: left top; margin-top: 11px; border: 1px solid var(--line); border-radius: 4px; background: #100a0e; }
+		.remote-preview-text { display: block; max-height: 360px; overflow: auto; margin-top: 10px; padding: 12px; border: 1px solid var(--line); color: var(--muted-strong); background: #100a0e; font: 11px/1.65 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+		.remote-preview-text[hidden] { display: none !important; }
+		.safe-preview-shell { margin-top: 11px; overflow: hidden; border: 1px solid var(--line); border-radius: 4px; background: #100a0e; }
+		.safe-preview-chrome { display: flex; align-items: center; gap: 8px; min-height: 31px; padding: 0 10px; border-bottom: 1px solid var(--line); color: var(--muted); background: #1b1117; font: 9px var(--mono); }
+		.safe-preview-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+		.safe-preview-frame { display: block; width: 100%; height: 300px; border: 0; background: #fff; }
+		@media (max-width: 640px) { .safe-preview-frame { height: 240px; } }
+		.preview-report-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 11px; }
+		.remote-links { display: inline-block; margin-top: 9px; color: var(--wine-light); font-size: 10px; }
+		#scan-consent { width: min(440px, calc(100vw - 32px)); padding: 0; border: 1px solid #754052; border-radius: 8px; color: var(--text); background: #21151c; box-shadow: 0 22px 80px rgba(0,0,0,.65); }
+		#scan-consent::backdrop { background: rgba(10,6,8,.78); backdrop-filter: blur(3px); }
+		.consent-content { padding: 22px; }
+		.consent-content h2 { font-size: 16px; }
+		.consent-content p { color: var(--muted); font-size: 12px; line-height: 1.7; }
+		.consent-domain { display: block; margin: 12px 0; padding: 10px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted-strong); background: #180f14; font: 11px var(--mono); overflow-wrap: anywhere; }
+		.consent-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 17px; }
+		.consent-actions [hidden] { display: none !important; }
+		.guide-panel { margin-top: 0; padding: 23px; }
+		.guide-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px 24px; margin: 20px 0 0; padding: 0; list-style: none; counter-reset: guide; }
+		.guide-list li { position: relative; min-height: 68px; padding: 0 0 15px 38px; border-bottom: 1px solid var(--line); counter-increment: guide; }
+		.guide-list li::before { position: absolute; top: 0; left: 0; display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #754052; border-radius: 50%; color: #ffc1cf; content: counter(guide, decimal-leading-zero); font: 9px var(--mono); }
+		.guide-list strong { display: block; color: var(--muted-strong); font-size: 11px; }
+		.guide-list span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+		.guide-warning { margin-top: 19px; }
+		.footer { display: flex; justify-content: space-between; gap: 15px; margin-top: 21px; color: #806e77; font: 9px var(--mono); }
+		@keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+		@media (max-width: 800px) {
+			.app-shell { padding: 0 24px 32px; }
+			.workspace { grid-template-columns: minmax(0, 1.25fr) minmax(230px, .8fr); }
+			.scanner { padding: 20px; }
+		}
+		@media (max-width: 760px) {
+			.nav-toggle { display: inline-flex; }
+			.main-nav {
+				position: fixed;
+				top: 74px;
+				right: 16px;
+				z-index: 40;
+				display: none;
+				width: min(72vw, 320px);
+				height: auto;
+				max-height: calc(100vh - 92px);
+				overflow-y: auto;
+				padding: 10px 8px 12px;
+				border: 1px solid var(--line);
+				border-radius: 14px;
+				background: rgba(23,16,20,.98);
+				box-shadow: 0 24px 60px rgba(0,0,0,.35);
+			}
+			.main-nav.is-open { display: grid; }
+			.nav-link { min-height: 48px; padding: 0 14px; border-radius: 8px; text-align: left; }
+			.nav-link[aria-current="page"] { background: rgba(190,83,110,.08); }
+			.nav-link[aria-current="page"]::after { display: none; }
+		}
+		@media (max-width: 640px) {
+			.app-shell { padding: 0 17px 28px; }
+			.topbar { height: 66px; }
+			.top-status { font-size: 9px; }
+			.intro { padding: 34px 0 21px; }
+			.intro p { font-size: 13px; }
+			.workspace { grid-template-columns: 1fr; }
+			.side-column { grid-template-columns: 1fr; }
+			.scanner { padding: 17px; }
+			textarea { min-height: 165px; }
+			.shortcut { display: none; }
+			.contacts-panel, .guide-panel { padding: 17px; }
+			.reports-panel { padding: 17px; }
+			.remote-scan { margin-left: 0; }
+			.stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+			.contact-form { grid-template-columns: 1fr 1fr; }
+			.directory-toolbar { grid-template-columns: 1fr; }
+			.directory-card { grid-template-columns: 1fr; }
+			.directory-source { justify-self: start; }
+			.form-field.source-field { grid-column: span 2; }
+			.form-actions { grid-column: span 2; }
+			.guide-list { grid-template-columns: 1fr; }
+			.footer { flex-direction: column; }
+		}
+		@media (max-width: 390px) {
+			.contact-form { grid-template-columns: 1fr; }
+			.form-field.source-field, .form-actions { grid-column: auto; }
+			.nav-link { padding: 0 9px; font-size: 10px; }
+			.primary, .secondary, .contact-edit, .contact-remove { min-height: 34px; }
+			.primary { min-width: 122px; padding: 0 12px; }
+			.contact-remove { width: 28px; height: 28px; }
+			.saved-contact-detail { font-size: 11px; }
+		}
+		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+	</style>
+</head>
+<body>
+	<div class="app-shell">
+		<header class="topbar">
+			<a class="brand" href="#main" aria-label="Phishing Detector home">
+				<span class="brand-mark" aria-hidden="true">P</span>
+				<span><span class="brand-name">PHISHING DETECTOR</span><span class="brand-sub">message defense</span></span>
+			</a>
+			<div class="top-status" id="server-status"><span class="status-dot" aria-hidden="true"></span> CHECKING SERVER</div>
+			<button class="nav-toggle" id="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
+		</header>
+		<div class="nav-overlay" id="nav-overlay" aria-hidden="true"></div>
+
+		<main id="main">
+			<section class="intro" aria-labelledby="page-title">
+				<div class="eyebrow">Personal security / 01</div>
+				<h1 id="page-title">Pause before you tap.</h1>
+				<p>Analyze messages locally and compare senders with your trusted contacts and the official directory.</p>
+			</section>
+
+			<nav class="main-nav" id="main-nav" aria-label="Main menu">
+				<button class="nav-link" type="button" data-view="checker" aria-current="page">Checker</button>
+				<button class="nav-link" type="button" data-view="contacts">Trusted contacts</button>
+				<button class="nav-link" type="button" data-view="directory">Official directory</button>
+				<button class="nav-link" type="button" data-view="reports">Threat reports</button>
+				<button class="nav-link" type="button" data-view="guide">How to use</button>
+			</nav>
+
+			<section class="app-view" id="checker-view" aria-label="Message checker">
+			<div class="workspace">
+				<section class="panel scanner" aria-labelledby="scanner-title">
+					<div class="panel-heading">
+						<div><h2 id="scanner-title">Message checker</h2><div class="panel-kicker">Paste a message and compare the sender with saved contacts and the official directory.</div></div>
+						<span class="local-tag">● &nbsp;LOCAL SCAN</span>
+					</div>
+					<label class="field-label" for="message-input">MESSAGE CONTENT</label>
+					<textarea id="message-input" maxlength="5000" spellcheck="false" placeholder="Paste the message here..." aria-describedby="input-help"></textarea>
+					<div class="field-meta" id="input-help"><span>Text is checked locally and is not uploaded.</span><span id="char-count">0 / 5,000</span></div>
+					<div class="sender-entry">
+						<label class="field-label" for="sender-input">SENDER EMAIL OR PHONE (OPTIONAL)</label>
+						<input class="sender-input" id="sender-input" maxlength="180" autocomplete="off" placeholder="BDO Support <sender@example.com> or +63..." aria-describedby="sender-help">
+						<div class="sender-help" id="sender-help">We check the sender against saved contacts and the official directory. A copied name or logo does not prove who sent it.</div>
+					</div>
+					<div class="actions">
+						<button class="primary" id="scan-button" type="button"><span aria-hidden="true">⌕</span> Analyze message</button>
+						<button class="secondary" id="clear-button" type="button">Clear</button>
+						<span class="shortcut">LOCAL TEXT ANALYSIS</span>
+					</div>
+					<section class="result" id="result" aria-live="polite" aria-atomic="true" aria-label="Analysis result">
+						<div class="result-top"><div class="result-title"><span class="result-icon" id="result-icon" aria-hidden="true"></span><span id="result-title"></span></div><span class="risk-label" id="risk-label"></span></div>
+						<div class="result-score" id="result-score"></div>
+						<div class="analysis-time" id="analysis-time"></div>
+						<p class="result-summary" id="result-summary"></p>
+						<ul class="signals" id="signals"></ul>
+						<div class="sender-result" id="sender-result"></div>
+						<div class="report-actions"><button class="secondary" id="report-button" type="button" hidden>Save threat report locally</button><span class="report-status" id="report-status" aria-live="polite">Reports are stored in this app only.</span></div>
+						<div class="remote-scan"><div class="remote-scan-head"><div><div class="remote-scan-title">Link preview &amp; text scan</div><div class="remote-scan-status" id="remote-scan-status">Checking server...</div></div><div class="remote-scan-actions"><button class="secondary" id="preview-link-button" type="button" disabled>Preview &amp; scan link</button><button class="secondary" id="visual-preview-button" type="button" disabled>Visual sandbox screenshot</button></div></div><div class="remote-result" id="remote-result" hidden></div></div>
+					</section>
+				</section>
+				<aside class="side-column"><section class="panel side-panel"><div class="side-title"><h2>Stay cautious</h2><span class="micro-label">CHECK</span></div><div class="signal-desc">Pattern checks are not proof of fraud or safety. Never share an OTP, password, PIN, or CVV.</div></section></aside>
+			</div>
+			</section>
+			<section class="app-view" id="contacts-view" hidden><div class="panel contacts-panel"><div class="contacts-heading"><div><h2>Trusted contacts</h2><p>Personal contacts are saved below. The official channels list includes verified support portals for major apps and services.</p></div><span class="contacts-count" id="contacts-count">0 SAVED</span></div><form class="contact-form" id="contact-form"><div class="form-field"><label for="contact-org">ORGANIZATION</label><input id="contact-org" name="organization" maxlength="80" required></div><div class="form-field"><label for="contact-type">TYPE</label><select id="contact-type" name="type"><option value="email">Email</option><option value="phone">Phone</option></select></div><div class="form-field"><label for="contact-value">EMAIL OR NUMBER</label><input id="contact-value" name="value" maxlength="1200" placeholder="Add one or more values separated by commas, semicolons, or new lines" required></div><div class="form-field"><label for="contact-source">OFFICIAL SOURCE URL</label><input id="contact-source" name="source" type="url" required></div><div class="form-field"><label for="contact-main-domain">MAIN DOMAIN</label><input id="contact-main-domain" name="main_domain" placeholder="bank.com or bank.com.ph" required></div><div class="form-actions"><button class="primary" type="submit">Save contact</button></div></form><p class="contact-footnote">Use sources published by the organization. You can save several emails or phone numbers for the same organization.</p><div class="saved-contacts" id="saved-contacts"></div><div class="official-contacts-heading"><h3>Official channels</h3><span class="contacts-count" id="official-contacts-count">0 CHANNELS</span></div><p class="contact-footnote">SMS sender names and short codes vary by country and carrier and can be spoofed. Verify messages in the official app or portal; a displayed sender name is never proof.</p><div class="directory-list" id="official-trusted-contacts"></div></div></section>
+			<section class="app-view" id="directory-view" hidden><div class="panel contacts-panel"><div class="contacts-heading"><div><h2>Official contact directory</h2><p>Verified official channels for Philippine services, major apps, messaging platforms, and news sites. Confirm details at the official source.</p></div><span class="contacts-count" id="directory-count">0 ENTRIES</span></div><div class="privacy-note" style="margin-top:15px"><span>◆</span><span><strong>Selected entries, not exhaustive.</strong> Use official branch locators and current contact pages; a sender match is not authentication.</span></div><div class="directory-toolbar"><input id="directory-search" type="search" placeholder="Search organization, email, number, or portal" aria-label="Search official directory"><select id="directory-category" aria-label="Filter category"><option value="all">All categories</option><option value="Bank">Banks</option><option value="E-wallet">E-wallets</option><option value="Government">Government</option><option value="Health">Health</option><option value="Utility">Utilities</option><option value="Digital platforms">Social, messaging, shopping &amp; apps</option><option value="News &amp; media">News &amp; media</option><option value="saved">Saved contacts</option></select><span class="micro-label">OFFICIAL SOURCES</span></div><div class="directory-list" id="directory-list" aria-live="polite"></div></div></section>
+			<section class="app-view" id="reports-view" hidden><div class="panel reports-panel"><div class="contacts-heading"><div><h2>Threat reports</h2><p>Analysis findings and link hostnames are stored in your Firestore account. They are not sent to authorities.</p></div><span class="contacts-count" id="reports-count">0 SAVED</span></div><div class="saved-contacts" id="saved-reports"></div></div></section>
+			<section class="app-view" id="guide-view" hidden><div class="panel guide-panel"><div class="contacts-heading"><div><h2>How to use the phishing detector</h2><p>Follow these quick steps to review a suspicious message, verify the sender, and decide whether it is safe or dangerous.</p></div><span class="micro-label">QUICK USER GUIDE</span></div><div class="guide-section"><h3>Step-by-step</h3><ol class="guide-list"><li><strong>1. Paste the message</strong><span>Copy the full text exactly as received. The detector checks urgency, login requests, password mentions, payment lures, and suspicious domains.</span></li><li><strong>2. Enter the sender</strong><span>Type the sender email or phone number in the sender field. The system compares it with your saved trusted contacts and official channels.</span></li><li><strong>3. Review the sender verdict first</strong><span>The app prioritizes the sender and official family domain. If the sender matches the real organization, it stays safe or green even if the message wording is extra urgent.</span></li><li><strong>4. Check the links</strong><span>Use the preview option only when needed. It shows readable content from the URL without opening the full page in a browser.</span></li><li><strong>5. Verify through official contact channels</strong><span>Open official apps, websites, or phone numbers you already know. Do not trust links or contact details inside the suspicious message.</span></li><li><strong>6. Save trusted contacts</strong><span>Store bank, business, and support contacts with their official source URL so future checks are faster and more accurate.</span></li></ol></div><div class="guide-section"><h3>Features and functions</h3><ol class="guide-list"><li><strong>Sender verification</strong><span>Checks whether the sender or domain matches trusted contacts, saved contacts, or an official company family domain.</span></li><li><strong>Message analysis</strong><span>Flags pressure tactics, login prompts, password requests, payment pressure, and other suspicious message patterns.</span></li><li><strong>Link preview</strong><span>Shows the linked page text and checks the host without exposing the user to a full interactive browsing session.</span></li><li><strong>Threat reports</strong><span>Stores analyzed reports locally with risk level, sender, findings, and host information so users can review past checks.</span></li><li><strong>Official contact directory</strong><span>Lists verified support channels from banks, government services, apps, utilities, and media organizations.</span></li><li><strong>Saved trusted contacts</strong><span>Lets the user keep multiple emails and phone numbers for the same organization and edit or remove them anytime.</span></li></ol></div></div></section>
+			<footer class="footer"><span>PHISHING DETECTOR / MESSAGE SECURITY</span><span>Never share credentials or one-time codes.</span></footer>
+		</main></div>
+	<dialog id="scan-consent"><div class="consent-content"><h2 id="consent-title">Preview this link safely?</h2><p id="consent-copy">The phishing detector requests the public page and shows readable text. It does not open an interactive browser tab or run page scripts, cookies, or downloads.</p><p id="consent-warning">Private links and account/reset tokens should not be submitted. The destination can see the detector's network address.</p><code class="consent-domain" id="consent-domain"></code><div class="consent-actions"><button class="secondary" id="cancel-scan" type="button">Cancel</button><button class="primary" id="confirm-scan" type="button">Fetch text &amp; scan</button><button class="primary" id="confirm-visual-scan" type="button" hidden>Submit for private screenshot</button></div></div></dialog>
+	<script>
+		const messageInput = document.querySelector("#message-input");
+		const result = document.querySelector("#result");
+		const urlPattern = /(?:https?:\/\/|www\.)[^\s<>"']+|(?<![\w@.-])(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}(?::\d{1,5})?(?:[/?#][^\s<>"']*)?/gi;
+		const officialDirectory = [
+			{organization:"BDO Unibank",category:"Bank",emails:["callcenter@bdo.com.ph","reportphish@bdo.com.ph"],phones:["+63 2 8888-0000"],source:"https://www.bdo.com.ph/contact-us",portal:"",note:"Never share an OTP, PIN, CVV, or password."},
+			{organization:"BPI",category:"Bank",emails:[],phones:["+63 2 8891-0000","+63 2 7791-0077","1-800-188-89-100"],source:"https://www.bpi.com.ph/about-bpi/contact-us",portal:"https://www.bpi.com.ph/about-bpi/contact-us",note:"The official page provides a customer message form, not a general support email. The 8891-0000 line is the 24-hour Contact Center; 7791-0077 is the BPI Preferred line. Domestic toll-free is for PLDT callers outside Metro Manila."},
+			{organization:"Metrobank",category:"Bank",emails:["customercare@metrobank.com.ph"],phones:["+63 2 8870-0700"],source:"https://www.metrobank.com.ph/contact-us",portal:"",note:""},
+			{organization:"China Bank",category:"Bank",emails:["customercare@chinabank.ph"],phones:["+63 2 8888-5588","1-800-1888-5888"],source:"https://www.chinabank.ph/contact-us",portal:"",note:"24/7 contact center."},
+			{organization:"RCBC",category:"Bank",emails:["customercare@rcbc.com"],phones:["+63 2 8877-7222","1-800-10000-7222"],source:"https://www.rcbc.com/contact-us",portal:"",note:""},
+			{organization:"EastWest Bank",category:"Bank",emails:["service@eastwestbanker.com","cards@eastwestbanker.com"],phones:["+63 2 8888-1700","1-800-1888-8600"],source:"https://www.eastwestbanker.com/contact-us",portal:"",note:""},
+			{organization:"Security Bank",category:"Bank",emails:[],phones:["+63 2 8887-9188"],source:"https://www.securitybank.com/contact-us/",portal:"https://help.securitybank.com/",note:""},
+			{organization:"PSBank",category:"Bank",emails:["customerexperience@psbank.com.ph","consumerassistance@psbank.com.ph"],phones:["+63 2 8845-8888","+63 2 8885-8322"],source:"https://www.psbank.com.ph/contact-us",portal:"",note:""},
+			{organization:"PNB",category:"Bank",emails:[],phones:["+63 2 8818-9818","+63 2 8573-8888"],source:"https://www.pnb.com.ph/index.php/contact-us",portal:"https://www.pnb.com.ph/index.php/support",note:"Lost/stolen card lines."},
+			{organization:"GoTyme Bank",category:"Bank",emails:["help@gotyme.com.ph"],phones:["#468888"],source:"https://www.gotyme.com.ph/contact-us/",portal:"https://www.gotyme.com.ph/help",note:"In-app chat is recommended."},
+			{organization:"LANDBANK",category:"Bank",emails:["customercare@landbank.com","contactus@landbank.com","reportphishing@landbank.com"],phones:["+63 2 8405-7000","1-800-10-405-7000"],source:"https://www.landbank.com/find-us/contact-us",portal:"https://www.landbank.com/find-us/contact-us",note:"24/7 customer care. Use customercare@landbank.com for account concerns, contactus@landbank.com for general inquiries, and reportphishing@landbank.com to forward suspicious messages."},
+			{organization:"UnionBank",category:"Bank",emails:["customer.service@unionbankph.com"],phones:["+63 2 8841-8600","1-800-1888-2277","+800-8277-2273"],source:"https://www.unionbankph.com/contact-us",portal:"https://www.unionbankph.com/contact-us/write-to-us",note:"24-hour customer service. Domestic toll-free calls are for PLDT; international toll-free access depends on your carrier."},
+			{organization:"DBP",category:"Bank",emails:["customerservice@dbp.ph"],phones:["+63 2 8818-9511","1-800-10-3278888"],source:"https://www.dbp.ph/contact-us",portal:"https://www.dbp.ph/contact-us",note:"Customer Experience Management Department email; hotline and domestic toll-free contacts are published on DBP's official contact page."},
+			{organization:"CIMB Bank Philippines",category:"Bank",emails:[],phones:["#2462","+63 2 8924-2462"],source:"https://www.cimbbank.com.ph/en/help-and-support/contact-us.html",portal:"https://www.cimbbank.com.ph/en/help-and-support/contact-us.html",note:"CIMB publishes @cimb.com, @info.cimbbank.ph, @tips.cimbbank.ph, and @promos.cimbbank.ph as official sender domains; it does not list a generic customer-support mailbox on this page. Hotline: #2462 on Smart/Globe or +63 2 8924-2462 on other networks."},
+			{organization:"BIR",category:"Government",emails:["contact_us@bir.gov.ph"],phones:["+63 2 8538-3200","+63 2 8981-7000"],source:"https://www.bir.gov.ph/contactus",portal:"",note:"Tax queries and concerns."},
+			{organization:"SSS",category:"Government",emails:["usssaptayo@sss.gov.ph"],phones:["1455"],source:"https://www.sss.gov.ph/contact-us/",portal:"",note:""},
+			{organization:"DSWD Public Assistance",category:"Government",emails:["inquiry@dswd.gov.ph"],phones:["+63 2 8931-8101","+63 917 110-5686","+63 917 827-2543","+63 919 911-6200"],source:"https://www.dswd.gov.ph/contact-us/",portal:"",note:"Landline and mobile public assistance contacts published by DSWD."},
+			{organization:"DFA Office of Consular Affairs",category:"Government",emails:["oca.concerns@dfa.gov.ph","passportconcerns@dfa.gov.ph","oca.apostilleconcerns@dfa.gov.ph","oca.visa@dfa.gov.ph"],phones:["+63 2 8651-9400","+63 2 8234-3488","+63 2 8836-7763"],source:"https://consular.dfa.gov.ph/contact-us/",portal:"https://www.passport.gov.ph/",note:"Passport, authentication/Apostille, visa, and other consular concerns. Use the official page for the matching service."},
+			{organization:"PSA Civil Registration",category:"Government",emails:["info@psa.gov.ph"],phones:["1388"],source:"https://psa.gov.ph/contact-us",portal:"https://psa.gov.ph/contact-us",note:"PSA Information Section email. Hotline 1388 (fees may apply) is listed for PhilSys/National ID help; use the official portal for other civil registry requests."},
+			{organization:"DOLE Public Assistance",category:"Government",emails:[],phones:["1349","+63 2 8527-3000"],source:"https://dole.gov.ph/contactus/",portal:"https://dole.gov.ph/contactus/",note:"DOLE hotline 1349 and central office trunkline. No general public support email is listed on the contact page."},
+			{organization:"PhilHealth",category:"Health",emails:["actioncenter@philhealth.gov.ph"],phones:["+63 2 8662-2588","0998-857-2957","0968-865-4670","0917-127-5987","0917-110-9812"],source:"https://www.philhealth.gov.ph/about_us/contact.php",portal:"",note:"24/7 hotline and mobile lines."},
+			{organization:"BSP Consumer Assistance",category:"Government",emails:["consumeraffairs@bsp.gov.ph"],phones:["+63 2 5306-2584"],source:"https://www.bsp.gov.ph/Pages/InclusiveFinance/ConsumerAssistanceChannelsChatbot.aspx",portal:"https://www.bsp.gov.ph/Pages/InclusiveFinance/ConsumerAssistanceChannelsChatbot.aspx",note:"For complaints about a BSP-supervised bank or financial service after you have first contacted the provider. BSP also offers its Online Buddy (BOB)."},
+			{organization:"DTI Consumer CARe",category:"Government",emails:["consumercare@dti.gov.ph"],phones:["1-384"],source:"https://fairtrade.dti.gov.ph/faq/how-to-file-a-consumer-complaint/",portal:"https://consumercare.dti.gov.ph/",note:"For consumer complaints. File through the official online portal or email; One-DTI Hotline is 1-384."},
+			{organization:"NBI",category:"Government",emails:["nbiclearance@nbi.gov.ph","mailedclearance@nbi.gov.ph"],phones:["+63 2 8523-8231"],source:"https://nbi.gov.ph/contact/",portal:"https://nbi.gov.ph/contact/",note:"NBI-published emails are for clearance inquiries and mailed clearance, not general investigations. Main office hotline: +63 2 8523-8231."},
+			{organization:"PNP",category:"Government",emails:[],phones:["911"],source:"https://www.pnp.gov.ph/contact-us/",portal:"https://www.pnp.gov.ph/contact-us/",note:"Emergency line only for immediate danger. For non-emergency concerns, contact the nearest police station through the official PNP directory."},
+			{organization:"LTO",category:"Government",emails:[],phones:[],source:"https://lto.gov.ph/contact-us/",portal:"https://portal.lto.gov.ph/ords/f?p=PUBLIC_PORTAL:CONTACT_US",note:"No general public support email or phone is listed. Use the official LTMS contact form."},
+			{organization:"DICT",category:"Government",emails:[],phones:[],source:"https://dict.gov.ph/contact-us",portal:"https://dict.gov.ph/contact-us",note:"Use the DICT Contact Us page for official channels; no general support email or hotline was verified."},
+			{organization:"eGovPH",category:"Government",emails:["support@e.gov.ph"],phones:[],source:"https://e.gov.ph/",portal:"https://e.gov.ph/",note:"Official eGovPH support email. Use this address for app assistance; the official site does not list a support phone number."},
+			{organization:"CICC",category:"Government",emails:["report@cicc.gov.ph"],phones:["1326","0991-481-4225","0966-976-5971","0947-714-7105"],source:"https://cicc.gov.ph/report/",portal:"https://cicc.gov.ph/report/",note:"For cybercrime and scam reports. Hotline 1326 is the national anti-scam line; mobile numbers are alternate report channels."},
+			{organization:"Pag-IBIG Fund",category:"Government",emails:["contactus@pagibigfund.gov.ph"],phones:["+63 2 8724-4244"],source:"https://www.pagibigfund.gov.ph/contactus.html",portal:"https://www.pagibigfund.gov.ph/contactus.html",note:"Official contact center and general inquiry email. Verify current contact options on the official site."},
+			{organization:"Meralco",category:"Utility",emails:["customercare@meralco.com.ph"],phones:["16211","16210"],source:"https://online.meralco.com.ph/customers/s/contact",portal:"",note:"Residential and business hotlines."},
+			{organization:"GCash Help Center",category:"E-wallet",emails:["support@gcash.com"],phones:["2882"],source:"https://help.gcash.com/hc/en-us/p/contact-us",portal:"https://help.gcash.com/hc/en-us/p/contact-us",note:"Hotline 2882 is for GCash users. Use the official in-app Help Center for account-specific concerns; never share an OTP with support."},
+			{organization:"Maya",category:"E-wallet",emails:[],phones:["+63 2 8845-7788","1-800-1084-57788","+63 2 8845-7777","1-800-1084-57777"],source:"https://www.maya.ph/contact-us",portal:"https://support.maya.ph/s/",note:"Use the first hotline for Maya app concerns and the second for Maya Center concerns. Support is through the official Help Center, ticket, or chat. no-reply@maya.ph only sends ticket updates and cannot receive replies."},
+			{organization:"DOH Hospitals and Facilities Directory",category:"Health",emails:[],phones:[],source:"https://hospitals.doh.gov.ph/",portal:"https://hospitals.doh.gov.ph/",note:"This directory lists individual hospitals, each with its own contact details; use the facility listing instead of a single central support number."},
+			{organization:"Facebook",category:"Digital platforms",emails:[],phones:[],source:"https://www.facebook.com/help/",portal:"https://www.facebook.com/help/",note:"No general public support email or phone. Use the Help Center or signed-in Support Inbox."},
+			{organization:"Instagram",category:"Digital platforms",emails:[],phones:[],source:"https://help.instagram.com/",portal:"https://help.instagram.com/",note:"No general public support email or phone. Use the Help Center or in-app account support."},
+			{organization:"Messenger",category:"Digital platforms",emails:[],phones:[],source:"https://www.facebook.com/help/messenger-app/",portal:"https://www.facebook.com/help/messenger-app/",note:"No general public support email or phone. Use official in-app help; unsolicited support chats are not verified by their display name."},
+			{organization:"Threads",category:"Digital platforms",emails:[],phones:[],source:"https://help.instagram.com/",portal:"https://help.instagram.com/",note:"No general public support email or phone. Use Meta's Help Center or in-app support."},
+			{organization:"TikTok",category:"Digital platforms",emails:[],phones:[],source:"https://www.tiktok.com/support",portal:"https://www.tiktok.com/support",note:"No general public support email or phone. Use Help Center or in-app support tickets."},
+			{organization:"YouTube",category:"Digital platforms",emails:[],phones:[],source:"https://support.google.com/youtube/",portal:"https://support.google.com/youtube/",note:"No general public support email or phone. Use the official Help Center and signed-in product support."},
+			{organization:"Google Account and Gmail",category:"Digital platforms",emails:[],phones:[],source:"https://support.google.com/accounts/",portal:"https://support.google.com/accounts/",note:"No general public support email or phone. Use account recovery and official product support; avoid numbers in search ads or unsolicited messages."},
+			{organization:"WhatsApp",category:"Digital platforms",emails:[],phones:[],source:"https://www.whatsapp.com/contact/",portal:"https://faq.whatsapp.com/",note:"No support email or phone is monitored for support requests. Use the official Help Center or contact form; support does not ask for your verification code."},
+			{organization:"Telegram",category:"Digital platforms",emails:[],phones:[],source:"https://telegram.org/support",portal:"https://telegram.org/support",note:"No general public support email or phone. Use the official support request form; unsolicited support accounts are not verified by their names."},
+			{organization:"Viber",category:"Digital platforms",emails:[],phones:[],source:"https://support.viber.com/",portal:"https://support.viber.com/",note:"No general public support email or phone was verified. Use the official Help Center contact form."},
+			{organization:"X",category:"Digital platforms",emails:[],phones:[],source:"https://help.x.com/en/forms",portal:"https://help.x.com/en/forms",note:"No general public support email or phone. Use official forms for account access, safety, and impersonation reports."},
+			{organization:"LinkedIn",category:"Digital platforms",emails:[],phones:[],source:"https://www.linkedin.com/help/linkedin/ask",portal:"https://www.linkedin.com/help/linkedin/ask",note:"No general public support email or phone. Use the official support request form."},
+			{organization:"Apple Support",category:"Digital platforms",emails:[],phones:[],source:"https://support.apple.com/en-ph/contact",portal:"https://support.apple.com/en-ph/contact",note:"Apple shows the current Philippines support options after you choose a product or issue. No single public support number is listed on this page."},
+			{organization:"Microsoft Support",category:"Digital platforms",emails:[],phones:[],source:"https://support.microsoft.com/contactus",portal:"https://support.microsoft.com/contactus",note:"No general public support email or phone. Options depend on product and account; use the official contact flow."},
+			{organization:"Shopee Philippines",category:"Digital platforms",emails:[],phones:[],source:"https://help.shopee.ph/portal",portal:"https://help.shopee.ph/portal",note:"No general public support email or phone. Use Shopee Help Center and in-app Internet Call or chat."},
+			{organization:"Lazada Philippines",category:"Digital platforms",emails:[],phones:["(02) 895 29232"],source:"https://helpcenter.lazada.com.ph/s/faq",portal:"https://helpcenter.lazada.com.ph/s/faq",note:"Official Help Center lists this customer-care line daily, 8 AM to 8 PM; verify current availability on the page."},
+			{organization:"Globe Telecom",category:"Digital platforms",emails:[],phones:["211","+63 2 7730-1000"],source:"https://www.globe.com.ph/help/troubleshooting",portal:"https://www.globe.com.ph/contact-us",note:"Official support hotline: 211 from a Globe mobile or +63 2 7730-1000 from a landline. No general support email was verified."},
+			{organization:"Smart Communications",category:"Digital platforms",emails:[],phones:["*888","+63 2 8888-1111"],source:"https://help.smart.com.ph/contact-smart-through-these-official-online-channels/",portal:"https://smart.com.ph/Help/contact-support",note:"Call *888 from a Smart number or +63 2 8888-1111 from a landline. No general support email is listed; official chat/social channels are on the contact page."},
+			{organization:"ABS-CBN News",category:"News & media",emails:[],phones:[],source:"https://www.abs-cbn.com/contact-us/news",portal:"https://www.abs-cbn.com/contact-us/news",note:"No public newsroom email or phone was verified. Use the official newsroom contact page; sender names in news alerts do not prove authenticity."},
+			{organization:"GMA News",category:"News & media",emails:["comment@gmanews.tv","feedback@gmanews.tv"],phones:["+63 2 8982-7777"],source:"https://www.gmanetwork.com/news/aboutus/",portal:"https://www.gmanetwork.com/news/aboutus/",note:"Use comment@gmanews.tv for comments and feedback@gmanews.tv to contact writers, contributors, columnists, or editors. The listed phone is the GMA News Online trunkline."},
+			{organization:"Rappler",category:"News & media",emails:["feedback@rappler.com","desk@rappler.com","info@rappler.com"],phones:["+63 2 8661-9985"],source:"https://www.rappler.com/about/1557-contact-us/",portal:"https://www.rappler.com/about/1557-contact-us/",note:"Use feedback@rappler.com for feedback, desk@rappler.com for contributions, or info@rappler.com for other matters. Official office phone listed on its contact page."},
+			{organization:"Inquirer.net",category:"News & media",emails:["suggestions@inquirer.net"],phones:[],source:"https://newsinfo.inquirer.net/pages/contact",portal:"https://services.inquirer.net/contactus/",note:"The official site lists suggestions@inquirer.net under Email Us. Use its Contact Us page for other requests; no general phone number was listed."}
+		];
+		function normalizeDomain(value) {
+			if (!value) return "";
+			try {
+				const clean = value.trim();
+				if (/^https?:\/\//i.test(clean)) return new URL(clean).hostname.toLowerCase().replace(/^www\./, "");
+				return clean.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#]/)[0].replace(/\.$/, "");
+			} catch {
+				return value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#]/)[0].replace(/\.$/, "");
+			}
+		}
+		function officialMainDomain(source) {
+			const labels = normalizeDomain(source).split(".").filter(Boolean);
+			if (labels.length < 2) return labels[0] || "";
+			const compoundSuffixes = new Set(["com.ph", "net.ph", "org.ph", "gov.ph", "edu.ph", "mil.ph"]);
+			return labels.length > 2 && compoundSuffixes.has(labels.slice(-2).join(".")) ? labels.slice(-3).join(".") : labels.slice(-2).join(".");
+		}
+		function officialEntryDomains(entry) {
+			const hosts = [];
+			if (entry.mainDomain) hosts.push(entry.mainDomain);
+			if (entry.source) hosts.push(normalizeDomain(entry.source));
+			if (entry.portal) hosts.push(normalizeDomain(entry.portal));
+			for (const channel of entry.emails || []) {
+				if (channel && channel.includes("@")) hosts.push(channel.split("@").pop().toLowerCase());
+			}
+			for (const channel of entry.phones || []) {
+				if (channel && /@/.test(channel)) hosts.push(channel.split("@").pop().toLowerCase());
+			}
+			const noteHosts = entry.note ? (entry.note.match(/[a-z0-9.-]+\.[a-z]{2,}/gi) || []) : [];
+			for (const host of noteHosts) hosts.push(host.toLowerCase());
+			return [...new Set(hosts.filter(Boolean).map(host => host.replace(/^www\./, "")))];
+		}
+		officialDirectory.forEach(entry => {
+			entry.mainDomain = officialMainDomain(entry.source);
+			entry.domains = officialEntryDomains(entry);
+		});
+		window.initialOfficialDirectory = officialDirectory;
+		window.firebaseStoreLoaded = import("./firebase-store.js");
+		function normalizeSavedContactEntry(contact) {
+			const mainDomain = normalizeDomain(contact.main_domain || contact.source || "");
+			return {
+				organization: contact.organization,
+				emails: contact.type === "email" ? [contact.value] : [],
+				phones: contact.type === "phone" ? [contact.value] : [],
+				source: contact.source || "",
+				portal: contact.source || "",
+				note: mainDomain ? `Saved contact for ${contact.organization}.` : "",
+				domains: mainDomain ? [mainDomain] : []
+			};
+		}
+		function trustedReferenceEntries() {
+			return [...officialDirectory, ...contacts.map(normalizeSavedContactEntry).filter(entry => entry.organization && entry.domains.length)];
+		}
+		function verifiedSourceEntries() {
+			return officialDirectory.filter(entry => Array.isArray(entry.domains) && entry.domains.length);
+		}
+		let apiOnline=false, urlscanConfigured=false, contacts=[], reports=[], latestReport=null, previewUrl="", safePreviewMarkup="";
+		async function apiRequest(path,options={}){if(path==="/api/preview")safePreviewMarkup="";if(/^\/api\/(?:contacts|directory|reports)(?:\/|$)/.test(path)){await window.firebaseStoreLoaded;try{return await window.firebaseDataRequest(path,options);}catch(error){if(["permission-denied","auth/operation-not-allowed"].includes(error.code))throw new Error("Firestore denied access. Enable Anonymous sign-in and publish firestore.rules.");throw error;}}const response=await fetch(path,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})},cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||`Request failed (${response.status}).`);if(path==="/api/preview")safePreviewMarkup=data.safeHtml||"";return data;}
+		function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;}
+		function updatePreviewButton(){const urls=messageInput.value.match(urlPattern)||[];urlPattern.lastIndex=0;document.querySelector("#preview-link-button").disabled=!apiOnline||!urls.length;document.querySelector("#visual-preview-button").disabled=!apiOnline||!urlscanConfigured||!urls.length;if(apiOnline&&urls.length)document.querySelector("#remote-scan-status").textContent=urlscanConfigured?"Text preview and visual sandbox are available after consent.":"Text preview is available after consent. Visual screenshots need URLSCAN_API_KEY on the server.";}
+		function renderDirectory(){
+			const query=document.querySelector("#directory-search").value.trim().toLowerCase();
+			const category=document.querySelector("#directory-category").value;
+			const list=document.querySelector("#directory-list");
+			const entries=officialDirectory.filter(item=>(category==="all"||item.category===category)&&`${item.organization} ${item.category} ${item.emails.join(" ")} ${item.phones.join(" ")} ${item.note}`.toLowerCase().includes(query));
+			list.replaceChildren();
+			document.querySelector("#directory-count").textContent=`${entries.length} / ${officialDirectory.length} ENTRIES`;
+			for(const entry of entries){
+				const card=el("article","directory-card"),body=document.createElement("div");
+				body.append(el("div","directory-name",entry.organization),el("div","directory-meta",entry.category.toUpperCase()),el("div","directory-meta",`MAIN DOMAIN / ${entry.mainDomain || officialMainDomain(entry.source)}`));
+				const channels=el("div","directory-channels");
+				for(const email of entry.emails){const row=el("div","directory-channel"),label=el("strong","","EMAIL"),link=el("a","",email);link.href=`mailto:${email}`;row.append(label,link);channels.append(row);}
+				for(const phone of entry.phones){const row=el("div","directory-channel"),label=el("strong","","PHONE"),link=el("a","",phone);link.href=`tel:${phone.replace(/[^\d+*#,;]/g,"")}`;row.append(label,link);channels.append(row);}
+				if(entry.portal){const row=el("div","directory-channel"),label=el("strong","","PORTAL"),link=el("a","","Open official help/contact portal ↗");link.href=entry.portal;link.target="_blank";link.rel="noopener noreferrer";row.append(label,link);channels.append(row);}
+				body.append(channels);if(entry.note)body.append(el("div","directory-note",entry.note));
+				const source=el("a","directory-source","Official source ↗");source.href=entry.source;source.target="_blank";source.rel="noopener noreferrer";card.append(body,source);list.append(card);
+			}
+		}
+		let editingContactId=null;
+		const contactForm=document.querySelector("#contact-form");
+		const contactSubmitButton=contactForm.querySelector("button[type='submit']");
+		const contactCancelButton=el("button","secondary","Cancel edit");
+		contactCancelButton.type="button";
+		contactCancelButton.hidden=true;
+		contactForm.querySelector(".form-actions").append(contactCancelButton);
+		const contactStatus=contactForm.nextElementSibling;
+		contactStatus.id="contact-status";
+		contactStatus.setAttribute("role","status");
+		contactStatus.setAttribute("aria-live","polite");
+		function setContactStatus(message,isError=false){contactStatus.textContent=message;contactStatus.classList.add("contact-notice");contactStatus.classList.toggle("contact-notice-error",isError);}
+		function resetContactEditor(){editingContactId=null;delete contactForm.dataset.editIds;contactForm.reset();contactSubmitButton.textContent="Save contact";contactCancelButton.hidden=true;document.querySelector("#contact-main-domain").value="";}
+		contactCancelButton.addEventListener("click",()=>{resetContactEditor();setContactStatus("Edit cancelled. The contact was not changed.");});
+		document.querySelector("#contact-source").addEventListener("input",()=>{
+			const source=document.querySelector("#contact-source").value.trim();
+			if(source && !document.querySelector("#contact-main-domain").value.trim()){
+				document.querySelector("#contact-main-domain").value=normalizeDomain(source);
+			}
+		});
+		function parseMultiValueInput(value, type){
+			return [...new Set(String(value || "").split(/[\n,;]+/).map(item=>item.trim()).filter(Boolean).map(item=>{
+				const cleaned = item.replace(/^\s+|\s+$/g, "");
+				if (type === "phone") return cleaned.replace(/\s+/g, "").replace(/[^\d+]/g, "");
+				return cleaned.toLowerCase();
+			}))];
+		}
+		contactForm.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			const organization = contactForm.elements.organization.value.trim();
+			const type = contactForm.elements.type.value;
+			const source = contactForm.elements.source.value.trim();
+			const mainDomain = normalizeDomain(contactForm.elements.main_domain.value.trim() || source);
+			const values = parseMultiValueInput(contactForm.elements.value.value, type);
+			if (!organization) {
+				setContactStatus("Enter the organization name before saving.", true);
+				contactForm.elements.organization.focus();
+				return;
+			}
+			if (!source || !/^https:\/\//i.test(source)) {
+				setContactStatus("Use an HTTPS official source URL for this contact.", true);
+				contactForm.elements.source.focus();
+				return;
+			}
+			if (!mainDomain || !mainDomain.includes(".")) {
+				setContactStatus("Add a valid main domain such as bank.com or bank.com.ph.", true);
+				contactForm.elements.main_domain.focus();
+				return;
+			}
+			if (!values.length) {
+				setContactStatus("Add at least one email address or phone number to save.", true);
+				contactForm.elements.value.focus();
+				return;
+			}
+			try {
+				const existingIds = editingContactId ? JSON.parse(contactForm.dataset.editIds || "[]") : [];
+				const existingMatches = contacts.filter(contact => existingIds.includes(contact.id));
+				const usedIds = new Set();
+				for (const value of values) {
+					const normalizedValue = type === "email" ? value.toLowerCase() : value.replace(/[^\d+]/g, "");
+					const match = existingMatches.find(contact => contact.type === type && contact.value === normalizedValue && !usedIds.has(contact.id));
+					if (match) {
+						await apiRequest(`/api/contacts/${match.id}`, { method: "PUT", body: JSON.stringify({ organization, type, value: normalizedValue, source, main_domain: mainDomain }) });
+						usedIds.add(match.id);
+						continue;
+					}
+					await apiRequest("/api/contacts", { method: "POST", body: JSON.stringify({ organization, type, value: normalizedValue, source, main_domain: mainDomain }) });
+				}
+				for (const contact of existingMatches) {
+					if (!usedIds.has(contact.id)) {
+						await apiRequest(`/api/contacts/${contact.id}`, { method: "DELETE" });
+					}
+				}
+				await loadContacts();
+				resetContactEditor();
+				setContactStatus(`Saved ${organization}. ${values.length} ${type === "email" ? "email" : "phone"} ${values.length === 1 ? "entry" : "entries"} were saved to Firestore.`);
+			} catch (error) {
+				setContactStatus(`Could not save contact: ${error.message}`, true);
+			}
+		});
+		function renderContacts(){
+			const list=document.querySelector("#saved-contacts");
+			list.replaceChildren();
+			const groups=new Map();
+			for(const contact of contacts){
+				const key=`${contact.organization.toLowerCase()}::${contact.main_domain || normalizeDomain(contact.source)}::${contact.type}`;
+				if(!groups.has(key))groups.set(key,{rows:[],organization:contact.organization,source:contact.source,main_domain:contact.main_domain || normalizeDomain(contact.source),type:contact.type});
+				groups.get(key).rows.push(contact);
+			}
+			document.querySelector("#contacts-count").textContent=`${contacts.length} SAVED`;
+			if(!groups.size)list.append(el("div","empty-contacts","No contacts saved yet."));
+			for(const group of [...groups.values()]){
+				const row=el("article","saved-contact"),body=el("div","saved-contact-main"),actions=el("div","contact-actions");
+				body.append(el("div","saved-contact-title",group.organization));
+				const domainMeta=el("div","saved-contact-domain",`Main domain: ${group.main_domain || normalizeDomain(group.source) || "not available"}`);
+				const details=el("div","saved-contact-detail-list");
+				for(const contact of group.rows){
+					const item=el("div","saved-contact-detail-row");
+					const detail=el("a","saved-contact-detail",contact.value);
+					detail.href=contact.type==="email"?`mailto:${contact.value}`:`tel:${contact.value}`;
+					item.append(detail);
+					details.append(item);
+				}
+				const source=el("a","contact-source","Official source ↗");
+				source.href=group.source;source.target="_blank";source.rel="noopener noreferrer";
+				body.append(domainMeta,details,source);
+				const edit=el("button","contact-edit","Edit");
+				edit.type="button";edit.setAttribute("aria-label",`Edit ${group.organization}`);
+				edit.addEventListener("click",()=>{
+					const ids=group.rows.map(contact=>contact.id);
+					editingContactId=ids[0];
+					contactForm.elements.organization.value=group.organization;
+					contactForm.elements.type.value=group.type;
+					contactForm.elements.value.value=group.rows.map(contact=>contact.value).join("\n");
+					contactForm.elements.source.value=group.source;
+					contactForm.elements.main_domain.value=group.main_domain || normalizeDomain(group.source) || "";
+					contactForm.dataset.editIds=JSON.stringify(ids);
+					contactSubmitButton.textContent="Update contact";
+					contactCancelButton.hidden=false;
+					setContactStatus(`Editing ${group.organization}. Review the details, then confirm the update.`);
+					contactForm.scrollIntoView({behavior:"smooth",block:"center"});
+					contactForm.elements.organization.focus();
+				});
+				const remove=el("button","contact-remove","×");
+				remove.type="button";remove.setAttribute("aria-label",`Delete ${group.organization}`);
+				remove.addEventListener("click",async()=>{
+					if(!window.confirm(`Delete ${group.organization} from Trusted contacts? This cannot be undone.`)){setContactStatus(`Kept ${group.organization}; nothing was deleted.`);return;}
+					remove.disabled=true;
+					try{
+						for(const contact of group.rows){
+							await apiRequest(`/api/contacts/${contact.id}`,{method:"DELETE"});
+						}
+						if(editingContactId===group.rows[0].id)resetContactEditor();
+						await loadContacts();
+						setContactStatus(`Deleted ${group.organization} from Trusted contacts.`);
+					}catch(error){remove.disabled=false;setContactStatus(`Could not delete ${group.organization}: ${error.message}`,true);}
+				});
+				actions.append(edit,remove);row.append(body,actions);list.append(row);
+			}
+		}
+		function renderOfficialTrustedContacts(){
+			const list=document.querySelector("#official-trusted-contacts");
+			list.replaceChildren();
+			document.querySelector("#official-contacts-count").textContent=`${officialDirectory.length} CHANNELS`;
+			for(const entry of officialDirectory){
+				const card=el("article","directory-card"),body=document.createElement("div");
+				body.append(el("div","directory-name",entry.organization),el("div","directory-meta",entry.category.toUpperCase()),el("div","directory-meta",`MAIN DOMAIN / ${entry.mainDomain || officialMainDomain(entry.source)}`));
+				const channels=el("div","directory-channels");
+				for(const email of entry.emails){const row=el("div","directory-channel"),label=el("strong","","EMAIL"),link=el("a","",email);link.href=`mailto:${email}`;row.append(label,link);channels.append(row);}
+				for(const phone of entry.phones){const row=el("div","directory-channel"),label=el("strong","","PHONE"),link=el("a","",phone);link.href=`tel:${phone.replace(/[^\d+*#,;]/g,"")}`;row.append(label,link);channels.append(row);}
+				if(entry.portal){const row=el("div","directory-channel"),label=el("strong","","HELP / REPORT"),link=el("a","","Open official support portal ↗");link.href=entry.portal;link.target="_blank";link.rel="noopener noreferrer";row.append(label,link);channels.append(row);}
+				body.append(channels);if(entry.note)body.append(el("div","directory-note",entry.note));
+				const source=el("a","directory-source","Official source ↗");source.href=entry.source;source.target="_blank";source.rel="noopener noreferrer";card.append(body,source);list.append(card);
+			}
+		}
+		function renderReports(){const list=document.querySelector("#saved-reports");list.replaceChildren();document.querySelector("#reports-count").textContent=`${reports.length} SAVED`;if(!reports.length)list.append(el("div","empty-contacts","No reports saved yet."));for(const report of reports){const card=el("article","report-card"),body=document.createElement("div");body.append(el("div","report-card-title",`${report.risk.toUpperCase()} / ${report.hosts.join(", ")||"No link hostname"}`),el("div","report-card-meta",new Date(report.createdAt).toLocaleString()));const details=el("ul","report-card-signals");for(const finding of report.findings)details.append(el("li","",finding));body.append(details);card.append(body);list.append(card);}}
+		async function loadContacts(){contacts=(await apiRequest("/api/contacts")).contacts;renderContacts();renderOfficialTrustedContacts();renderDirectory();renderSenderMatch();}async function loadReports(){reports=(await apiRequest("/api/reports")).reports;renderReports();}
+		function firestoreSetupMessage(error){if(error.code==="auth/configuration-not-found")return"Set up Firebase Authentication in the Firebase Console, enable Anonymous sign-in, create a Firestore database, publish firestore.rules, then reload.";if(error.code==="auth/admin-restricted-operation")return"Enable Anonymous sign-in in Firebase Authentication, then reload to copy saved contacts and the directory into Firestore.";if(error.code==="permission-denied")return"Firestore denied access. Deploy firestore.rules, then reload.";if(error.code==="auth/unauthorized-domain")return"Add this app's host under Firebase Authentication > Settings > Authorized domains.";return`Could not connect to Firestore: ${error.message}`;}
+		async function initializeApi(){try{await window.firebaseStoreLoaded;await window.firebaseStoreReady;document.querySelector("#server-status").replaceChildren(el("span","status-dot",""),document.createTextNode(" FIRESTORE READY"));try{const health=await apiRequest("/api/health");apiOnline=health.status==="ok";urlscanConfigured=Boolean(health.urlscanConfigured);}catch{apiOnline=false;urlscanConfigured=false;}document.querySelector("#remote-scan-status").textContent=apiOnline?(urlscanConfigured?"Text preview and visual sandbox are available after consent.":"Text preview is available after consent. Visual screenshots need URLSCAN_API_KEY on the server."):"Remote link preview is unavailable; local message analysis and Firestore saving are ready.";const directoryData=await apiRequest("/api/directory");if(directoryData.entries.length){officialDirectory.splice(0,officialDirectory.length,...directoryData.entries);}else{await apiRequest("/api/directory",{method:"PUT",body:JSON.stringify({entries:officialDirectory})});}await Promise.all([loadContacts(),loadReports()]);}catch(error){apiOnline=false;urlscanConfigured=false;document.querySelector("#server-status").textContent="FIRESTORE SETUP REQUIRED";document.querySelector(".contact-footnote").textContent=firestoreSetupMessage(error);}updatePreviewButton();}
+		function updateReportButtonState(){const button=document.querySelector("#report-button");if(!button)return;button.hidden=!latestReport||latestReport.risk!=="danger";button.disabled=false;button.textContent="Save threat report locally";}
+		function scanMessage(){const value=messageInput.value.trim(),findings=[];if(/password|otp|one.time code|pin|cvv/i.test(value))findings.push("The message mentions an OTP, password, PIN, or CVV. Never share these details.");if(/urgent|immediately|act now|account.{0,20}(locked|suspended)/i.test(value))findings.push("Urgent wording can pressure you to act before verifying independently.");if(/bit\.ly|tinyurl|t\.co/i.test(value))findings.push("A shortened link hides its destination.");if(/\.(exe|scr|bat|cmd|msi|js|vbs|ps1)(?:\b|$)/i.test(value))findings.push("The message refers to an executable or script attachment.");result.className=`result visible ${findings.length?"verdict-warning":"verdict-clear"}`;document.querySelector("#result-title").textContent=findings.length?"Review this message":"No common warning patterns found";document.querySelector("#result-icon").textContent=findings.length?"!":"✓";document.querySelector("#risk-label").textContent=findings.length?"REVIEW":"NO FLAGS*";document.querySelector("#result-score").textContent=`${findings.length} warning signal${findings.length===1?"":"s"}`;document.querySelector("#analysis-time").textContent=`Analyzed ${new Date().toLocaleString()}`;document.querySelector("#result-summary").textContent="Pattern checks are not proof of fraud or safety. Verify unexpected requests through an official channel.";const signals=document.querySelector("#signals");signals.replaceChildren();for(const finding of findings.length?findings:["No matching warning patterns found."])signals.append(el("li","",finding));const urls=value.match(urlPattern)||[];urlPattern.lastIndex=0;latestReport={risk:findings.length?"warning":"clear",findings,hosts:urls.map(raw=>{try{return new URL(/^https?:/i.test(raw)?raw:`https://${raw}`).hostname;}catch{return "";}}).filter(Boolean)};document.querySelector("#remote-result").hidden=true;document.querySelector("#remote-scan-status").textContent=urls.length?"Text preview is ready after consent. The page is fetched by this server.":"Paste a link to enable text preview.";updatePreviewButton();}
+		function inspectSender(sender, messageText=""){
+			const email=sender.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]||"";
+			const displayName=sender.match(/^\s*(.*?)\s*<[^<>]+@[^<>]+>/)?.[1]?.replace(/["']/g,"").trim()||"";
+			const digits=sender.replace(/\D/g,"");
+			const isPhone=!email&&digits.length>=7;
+			const evidence=sender||"No sender email, phone number, or name was entered.";
+			const finding=(title,why,next,severity="warning",organization="")=>({title,evidence,why,next,severity,organization});
+			if(!email&&!isPhone)return{status:sender?"invalid":"missing",match:null,finding:finding("Sender could not be verified",sender?"Enter the actual email address or phone number, not just a display name. A name by itself can be copied.":"No sender details were provided, so Sentinel cannot check who sent this message.","Check the From address or phone number before trusting the message.")};
+			const normalizedEmail=email.toLowerCase(),normalizedDigits=digits;
+			const senderDomain=email?normalizedEmail.split("@").pop():"";
+			const sourceDomain=source=>{try{return new URL(source).hostname.toLowerCase().replace(/^www\./,"");}catch{return "";}};
+			const savedMatch=contacts.find(contact=>contact.type===(email?"email":"phone")&&(email?contact.value.toLowerCase()===normalizedEmail:contact.value.replace(/\D/g,"")===normalizedDigits));
+			const officialMatch=officialDirectory.find(entry=>email?entry.emails.some(channel=>channel.toLowerCase()===normalizedEmail):entry.phones.some(channel=>channel.replace(/\D/g,"")===normalizedDigits));
+			const officialDomainEntry = email ? officialDirectory.find(entry => {
+				const hosts = [...new Set([...(entry.emails || []).map(address => address.split("@").pop()), sourceDomain(entry.source), sourceDomain(entry.portal), ...((entry.note||"").match(/@[a-z0-9.-]+\.[a-z]{2,}/gi)||[]).map(address => address.slice(1).replace(/[.,;]+$/, ""))].filter(Boolean))];
+				return hosts.some(domain => matchesDomain(senderDomain, domain));
+			}) : null;
+			const trustedSourceMatch = email && contacts.find(contact => {
+				const host = sourceDomain(contact.source);
+				return host && matchesDomain(senderDomain, host);
+			});
+			const sameMainDomainMatch = email && contacts.find(contact => {
+				const mainDomain = normalizeDomain(contact.main_domain || contact.source || "");
+				return mainDomain && matchesDomain(senderDomain, mainDomain);
+			});
+			const exactMatch=savedMatch || officialMatch || trustedSourceMatch || officialDomainEntry || sameMainDomainMatch;
+			const identity=email?`${displayName} ${normalizedEmail.split("@")[0]}`:`${displayName} ${sender}`;
+			const identityTokens=identity.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+			const genericWords=new Set(["bank","philippines","the","official","support","service","services","unibank","consumer","assistance","department","public","office","center","help","contact","customer","care","inquiry","inquiries","information","online","account","security","alert","alerts","notification","notifications","admin","team","mail","email","noreply","info","news","media","com","net","org","gov","edu","mil","int","app"]);
+			const aliasesFor=entry=>entry.organization.toLowerCase().split(/[^a-z0-9]+/).filter(word=>word.length>=3&&!genericWords.has(word));
+			const claimsBrand=entry=>aliasesFor(entry).some(alias=>identityTokens.some(token=>token===alias||(alias.length>=4&&token.startsWith(alias))));
+			const officialDomainsFor=entry=>[...entry.emails.map(address=>address.split("@").pop()),sourceDomain(entry.source),sourceDomain(entry.portal),...(entry.note.match(/@[a-z0-9.-]+\.[a-z]{2,}/gi)||[]).map(address=>address.slice(1).replace(/[.,;]+$/,""))].filter(Boolean);
+			const claimedEntry=officialDirectory.find(entry=>claimsBrand(entry));
+			const spoofedDomainEntry=!exactMatch&&email&&officialDirectory.find(entry=>aliasesFor(entry).some(alias=>senderDomain.split(".").some(label=>{
+				const normalized=label.replace(/0/g,"o").replace(/1/g,"l").replace(/3/g,"e").replace(/5/g,"s").replace(/8/g,"b").replace(/[^a-z0-9]/g,"");
+				if(normalized===alias)return true;
+				if(alias.length<4||!(normalized.startsWith(alias)||normalized.endsWith(alias)||editDistanceAtMostOne(normalized,alias)))return false;
+				return true;
+			}))&&!officialDomainsFor(entry).some(domain=>matchesDomain(senderDomain,domain)));
+			const claimedDomainIsOfficial=claimedEntry&&email&&officialDomainsFor(claimedEntry).some(domain=>matchesDomain(senderDomain,domain));
+			const impersonated=claimedEntry&&!(claimedDomainIsOfficial||(!email&&exactMatch))?claimedEntry:spoofedDomainEntry;
+			if(impersonated){
+				const officialDomain=officialDomainsFor(impersonated)[0]||"the official contact page";
+				const why=email?`The sender appears to use ${impersonated.organization}'s name, but the part after @ is ${senderDomain}, not a listed official address such as ${officialDomain}. A copied bank name does not prove the email came from that bank.`:`The sender name mentions ${impersonated.organization}, but this number is not listed for that organization. Caller names can be copied.`;
+				const impersonationMessage=`This message is pretending to be from ${impersonated.organization}.`;
+				return{status:"danger",match:null,organization:impersonated,impersonationOrganization:impersonated.organization,impersonationMessage,finding:finding("Sender may be pretending to be an organization",why,`Do not reply, click links, or share an OTP or password. Contact ${impersonated.organization} using the number or website in the official directory.`,"danger",impersonated.organization)};
+			}
+			if(exactMatch){
+				const sameFamily = sameMainDomainMatch || trustedSourceMatch || officialDomainEntry;
+				const message = sameFamily
+					? `This sender uses the same trusted domain family as ${exactMatch.organization}. The email or number belongs to the same official domain group, so the sender is considered verified for this check.`
+					: `This exact email address or phone number is listed for ${exactMatch.organization}. That is a useful check, but a sender name or number can still be copied.`;
+				return{status:"matched",match:exactMatch,finding:finding(sameFamily?"Sender matches a trusted domain family":"Sender matches a listed contact",message,"Check any links or requests separately. Never share a one-time code, password, PIN, or CVV.","info",exactMatch.organization)};
+			}
+			const kind=email?"email address":"phone number";
+			const why=email?"This looks like an email address, but the exact address is not in your saved contacts or the official directory. That alone does not prove it is fake; we cannot confirm who owns it.":"This looks like a phone number, but it is not in your saved contacts or the official directory. That alone does not prove it is fake; we cannot confirm who is calling.";
+			return{status:"unknown",match:null,finding:finding("Sender is not verified",why,`Do not trust the display name alone. Check this ${kind} against the organization's official app or contact page before replying.`)};
+		}
+		function editDistanceAtMostOne(left,right){
+			if(Math.abs(left.length-right.length)>1)return false;
+			let leftIndex=0,rightIndex=0,differences=0;
+			while(leftIndex<left.length&&rightIndex<right.length){
+				if(left[leftIndex]===right[rightIndex]){leftIndex++;rightIndex++;continue;}
+				if(++differences>1)return false;
+				if(left.length>=right.length)leftIndex++;
+				if(right.length>=left.length)rightIndex++;
+			}
+			return true;
+		}
+		function looksLikeOfficialDomainVariant(candidate,official){
+			const candidateLabels=normalizeDomain(candidate).split(".");
+			const officialLabels=normalizeDomain(official).split(".");
+			return candidateLabels.some(candidateLabel=>candidateLabel.length>=4&&officialLabels.some(officialLabel=>officialLabel.length>=4&&candidateLabel!==officialLabel&&editDistanceAtMostOne(candidateLabel,officialLabel)));
+		}
+		function scanMessage(){
+			const value=messageInput.value.trim(),sender=document.querySelector("#sender-input").value.trim(),findings=[];
+			const senderCheck=inspectSender(sender, value);
+			if(senderCheck.finding)findings.push(senderCheck.finding);
+			const add=(title,evidence,why,next,severity="warning")=>findings.push({title,evidence,why,next,severity});
+			const excerpt=(match,text=value)=>text.slice(Math.max(0,match.index-70),Math.min(text.length,match.index+match[0].length+90)).replace(/\s+/g," ").trim();
+			const secret=/\b(?:OTP|one[- ]time (?:password|code)|verification code|passcode|password|PIN|CVV)\b/i.exec(value);
+			if(secret){
+				const credential=/\b(?:OTP|one[- ]time (?:password|code)|verification code|passcode|password|PIN|CVV)\b/i;
+				const sentences=value.split(/(?<=[.!?])\s+|\n/).filter(sentence=>credential.test(sentence));
+				const asksForSecret=/\b(?:we|our (?:team|bank|support)|(?:the|a|your) bank|the service|someone|anyone|a caller|the caller|the sender)\b.{0,45}\b(?:ask(?:s|ed|ing)?(?: you)?(?: for)?|request(?:s|ed|ing)?|need(?:s)?|require(?:s)?)\b.{0,65}\b(?:OTP|one[- ]time (?:password|code)|verification code|passcode|password|PIN|CVV)\b|\b(?:ask(?:s|ed|ing)?|request(?:s|ed|ing)?)\b.{0,70}\b(?:OTP|one[- ]time (?:password|code)|verification code|passcode|password|PIN|CVV)\b|^\s*(?:please\s+|kindly\s+)?(?:send|share|reply(?: with)?|enter|provide|type|submit|confirm|verify|give|tell|forward|text)\b.{0,70}\b(?:OTP|one[- ]time (?:password|code)|verification code|passcode|password|PIN|CVV)\b|\b(?:send|share|reply|give|tell)\b.{0,45}\b(?:to us|to me|to our support|with us)\b|\bwhat(?:'s| is) your (?:OTP|one[- ]time code|verification code|passcode|password|PIN|CVV)\b/i;
+				const safetyAdvice=/\b(?:never|do not|don't|dont|will not|won't|should not|shouldn't)\b[^.!?]{0,70}\b(?:ask(?:s|ed|ing)?(?: you)?(?: for)?|ask you to\s+(?:share|send|provide|give|tell|disclose)|request|share|send|provide|give|tell|disclose)\b[^.!?]{0,70}\b(?:OTP|one[- ]time (?:password|code)|verification code|passcode|password|PIN|CVV)\b/i;
+				const requestSentence=sentences.find(sentence=>asksForSecret.test(sentence)&&!safetyAdvice.test(sentence));
+				const safeNotice=sentences.some(sentence=>safetyAdvice.test(sentence));
+				if(requestSentence)add("Asks you to share a private code or password",requestSentence.replace(/\s+/g," ").trim().slice(0,220),"A bank or service may send a one-time code for you to use, but you should not tell it to a caller, reply to a message with it, or enter it through an unexpected link. Someone asking for it may be trying to access your account.","Do not send or enter the code. Open the bank's official app yourself or call the number on your bank card.","danger");
+				else if(!safeNotice)add("Mentions a private code or password",excerpt(secret),"The message mentions a detail that can unlock an account or approve a payment. Mentioning it alone does not prove a scam, but keep the code or password private.","Do not share the code or password. Check unexpected account notices in the official app.");
+			}
+			const urgencyPattern=/\b(?:act now|final warning|within \d+ hours?|account.{0,35}(?:locked|suspended|closed|blocked)|access.{0,20}will be revoked)\b/i;
+			const urgencySentence=value.split(/(?<=[.!?])\s+|\n/).find(sentence=>urgencyPattern.test(sentence)&&!/^\s*(?:if|when)\b/i.test(sentence));
+			const urgency=urgencySentence&&urgencyPattern.exec(urgencySentence);
+			if(urgency)add("Uses urgent account pressure",excerpt(urgency,urgencySentence),"This sentence threatens a block, gives a deadline, or pushes you to act now. Check account notices in the official app instead of following a message link.","Do not use links or numbers in the message. Open the official app or call the number on your bank card.","danger");
+			const payment=/\b(?:pay|payment|fee|bank transfer|credit card|refund|prize|reward|claim)\b/i.exec(value);
+			if(payment)add("Contains a payment or reward request",excerpt(payment),"Unexpected fees, refunds, or prizes are common lures, especially when paired with urgency or a link.","Verify the offer in the official app before paying or sharing financial details.");
+			const detectedUrls=[...new Set(value.match(urlPattern)||[])];
+			urlPattern.lastIndex=0;
+			const urls=detectedUrls.slice(0,10);
+			const messageWithoutLinks=value.replace(urlPattern," ");
+			urlPattern.lastIndex=0;
+			const referenceEntries=trustedReferenceEntries();
+			for(const [linkIndex,raw] of urls.entries()){
+				const cleanRaw=raw.replace(/[),.;!?]+$/g,"");
+				let parsed;try{parsed=new URL(/^https?:/i.test(cleanRaw)?cleanRaw:`https://${cleanRaw}`);}catch{add(`Pasted link ${linkIndex+1} could not be parsed`,cleanRaw,"This text resembles a link, but its destination could not be read as a URL.","Do not open it until you can verify the complete address.");continue;}
+				const host=parsed.hostname.toLowerCase().replace(/^www\./,"");
+				const trustedEntry=referenceEntries.find(entry=>[...(entry.domains||[]),entry.mainDomain,entry.source,entry.portal].map(normalizeDomain).filter(Boolean).some(domain=>matchesDomain(host,domain)));
+				const safePath=(parsed.pathname||"/").split("/").map(segment=>segment.length>48?"[redacted]":segment).join("/");
+				const linkEvidence=`${parsed.protocol}//${parsed.host}${safePath}`;
+				const linkDetails=[`Host: ${host}`,`Protocol: ${parsed.protocol.replace(":","")}`,`Path: ${safePath||"/"}`,`Query parameters: ${parsed.search?"present (values hidden)":"none"}`,trustedEntry?`Domain matches the saved/published entry for ${trustedEntry.organization}; this is not proof the page is safe.`:"Domain is not listed in your saved contacts or official directory."]; 
+				add(`Pasted link ${linkIndex+1} / ${host}`,linkEvidence,linkDetails.join(". "),trustedEntry?"Compare the full address with the organization’s official app or website; a listed domain alone does not guarantee safety.":"Do not open it unless you can verify the complete domain through an official source.","info");
+				if(parsed.username||parsed.password)add("Link contains embedded credentials",linkEvidence,"The URL includes a username or password before the host, which can disguise the real destination.","Do not open this link. Verify the organization using a trusted app or website.","danger");
+				const shortHosts=["bit.ly","tinyurl.com","t.co","tiny.cc","cutt.ly","rb.gy","is.gd","ow.ly"];
+				if(shortHosts.some(shortHost=>matchesDomain(host,shortHost)))add("Uses a shortened link",cleanRaw,"The visible link hides its final site, so its true destination cannot be judged from the message alone.","Treat the destination as unknown. Open the organization's official app or type its known address yourself.");
+				if(parsed.protocol==="http:")add("Link does not use HTTPS",cleanRaw,"The connection is not encrypted in transit. HTTPS alone does not prove a site is legitimate, but HTTP is a warning for sign-in or payment pages.","Do not enter credentials or payment details on this link.");
+				const trustedHost=Boolean(trustedEntry);
+				const genericBrandWords=new Set(["account","email","gmail","online","support","service","services","help","contact","customer","care","official","app","portal","bank","office","health","government"]);
+				const namedEntry=referenceEntries.find(entry=>entry.organization.toLowerCase().split(/[^a-z0-9]+/).filter(token=>token.length>=3&&!genericBrandWords.has(token)).some(token=>new RegExp(`\\b${token.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&")}\\b`,"i").test(messageWithoutLinks)));
+				if(namedEntry&&!trustedHost)add("Message names an organization but links elsewhere",`${namedEntry.organization} / ${host}`,`The message mentions ${namedEntry.organization}, but ${host} is not listed for that entry. Display names and logos can be copied.`,"Do not follow the message link. Open the organization's official app or saved portal.");
+			}
+			const senderIdentity = parseSenderIdentity(sender);
+			const impersonationName = senderCheck.impersonationOrganization || (senderCheck.organization && senderCheck.organization.organization) || "";
+			const trustedSenderDomain = Boolean(senderIdentity.domain && senderCheck.match && (
+				(senderCheck.match.main_domain && matchesDomain(senderIdentity.domain, normalizeDomain(senderCheck.match.main_domain))) ||
+				(senderCheck.match.source && matchesDomain(senderIdentity.domain, normalizeDomain(senderCheck.match.source))) ||
+				((senderCheck.match.domains||[]).some(domain => matchesDomain(senderIdentity.domain, domain)))
+			));
+			const hasDanger=findings.some(item=>item.severity==="danger"),warnings=findings.filter(item=>item.severity!=="info");
+			const topLevel = trustedSenderDomain ? "clear" : hasDanger ? "danger" : warnings.length ? "warning" : "clear";
+			const impersonationText = senderCheck.impersonationMessage || (impersonationName ? `This message is pretending to be from ${impersonationName}.` : "");
+			result.className=`result visible ${topLevel==="danger"?"verdict-danger":topLevel==="warning"?"verdict-warning":"verdict-clear"}`;
+			document.querySelector("#result-title").textContent=trustedSenderDomain?"Sender matches the official family domain":hasDanger?"Strong warning signals found":warnings.length?"Review these specific signals":senderCheck.status==="matched"?"Known sender, no warning found":"No specific warning pattern found";
+			document.querySelector("#result-icon").textContent=trustedSenderDomain?"✓":hasDanger?"!":warnings.length?"?":"✓";
+			document.querySelector("#risk-label").textContent=trustedSenderDomain?"SAFE":hasDanger?"HIGH RISK":warnings.length?"CAUTION":senderCheck.status==="matched"?"SAFE*":"NO FLAGS*";
+			const linkCountLabel=detectedUrls.length>urls.length?`${urls.length} of ${detectedUrls.length} links analyzed`:`${urls.length} link${urls.length===1?"":"s"} analyzed`;
+			document.querySelector("#result-score").textContent=`${warnings.length} warning signal${warnings.length===1?"":"s"} / ${linkCountLabel}${sender?" / sender checked":""}`;
+			document.querySelector("#analysis-time").textContent=`Analyzed ${new Date().toLocaleString()}`;
+			const resultSummary=impersonationText || (trustedSenderDomain?"SAFE: the sender is in the same official family domain as the saved or published contact. Message warnings below are secondary checks and should be reviewed separately, not treated as proof of fraud.":warnings.length?"Each warning below shows what was noticed and why it matters. A warning is not proof of fraud; verify unexpected requests independently.":senderCheck.status==="matched"?"SAFE*: the sender address matches a listed contact and no warning was found. Email addresses can still be spoofed, so check links and requests before acting.":"No matching warning signal was found in the pasted text. This does not prove the sender or link is safe.");
+			const linkHosts=[...new Set(urls.map(raw=>{try{return new URL(/^https?:/i.test(raw)?raw:`https://${raw}`).hostname.toLowerCase();}catch{return "";}}).filter(Boolean))];
+			const linkSummary=detectedUrls.length?`${linkCountLabel}: ${linkHosts.join(", ")||"destination unavailable"}. Parsed locally only; the page was not opened.`:"No links were found in the pasted message.";
+			const sentenceCount=value.split(/(?<=[.!?])\s+|\n/).filter(Boolean).length;
+			document.querySelector("#result-summary").textContent=`${resultSummary} Message text: ${value.length} characters across ${sentenceCount} sentence${sentenceCount===1?"":"s"}. ${linkSummary}`;
+			const signals=document.querySelector("#signals");signals.replaceChildren();
+			if(findings.length){for(const finding of findings){const item=el("li",finding.severity==="danger"?"signal-danger":finding.severity==="info"?"signal-info":""),details=el("div","");item.append(el("strong","",finding.title),el("div","",`Evidence: “${finding.evidence}”`),el("div","",finding.why),el("div","signal-next",`Next step: ${finding.next}`));signals.append(item);}}
+			else signals.append(el("li","","No request for credentials, urgent threat, payment lure, shortened link, or unmatched sender pattern was detected."));
+			latestReport={risk:trustedSenderDomain?"clear":hasDanger?"danger":warnings.length?"warning":"clear",findings:findings.map(item=>`${item.title}. Evidence: ${item.evidence}. ${item.why} Next: ${item.next}`),hosts:urls.map(raw=>{try{return new URL(/^https?:/i.test(raw)?raw:`https://${raw}`).hostname;}catch{return "";}}).filter(Boolean)};
+			document.querySelector("#remote-result").hidden=true;
+			document.querySelector("#remote-scan-status").textContent=urls.length?"Use Preview & scan link below to inspect a destination.":"No links detected in this message.";
+			updateReportButtonState();
+			renderSenderMatch();
+		}
+		let autoScanTimer;
+		document.querySelector("#scan-button").addEventListener("click",()=>{scanMessage();result.scrollIntoView({behavior:"auto",block:"start"});});document.querySelector("#report-button").addEventListener("click",async()=>{if(!latestReport||latestReport.risk!=="danger")return;const button=document.querySelector("#report-button"),status=document.querySelector("#report-status");button.disabled=true;status.textContent="Saving report to Firestore...";try{await apiRequest("/api/reports",{method:"POST",body:JSON.stringify(latestReport)});await loadReports();status.textContent="Threat report saved to Firestore.";button.textContent="Saved to Firestore";}catch(error){status.textContent=`Report not saved: ${error.message}`;button.disabled=false;}});messageInput.addEventListener("input",()=>{updatePreviewButton();clearTimeout(autoScanTimer);if(!messageInput.value.trim()){result.className="result";latestReport=null;updateReportButtonState();return;}autoScanTimer=setTimeout(scanMessage,300);});document.querySelector("#clear-button").addEventListener("click",()=>{clearTimeout(autoScanTimer);messageInput.value="";result.className="result";latestReport=null;updateReportButtonState();updatePreviewButton();});
+		document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{const selected=button.dataset.view;document.querySelectorAll(".app-view").forEach(view=>{view.hidden=view.id!==`${selected}-view`;});document.querySelectorAll("[data-view]").forEach(nav=>{if(nav===button)nav.setAttribute("aria-current","page");else nav.removeAttribute("aria-current");});if(selected==="directory")renderDirectory();}));document.querySelector("#directory-search").addEventListener("input",()=>renderDirectory());document.querySelector("#directory-category").addEventListener("change",()=>renderDirectory());
+		const consentDialog=document.querySelector("#scan-consent");document.querySelector("#preview-link-button").addEventListener("click",()=>{const urls=messageInput.value.match(urlPattern)||[];urlPattern.lastIndex=0;if(!urls.length)return;previewUrl=/^https?:/i.test(urls[0])?urls[0]:`https://${urls[0]}`;document.querySelector("#consent-domain").textContent=previewUrl;consentDialog.showModal();});document.querySelector("#cancel-scan").addEventListener("click",()=>{previewUrl="";consentDialog.close();});document.querySelector("#confirm-scan").addEventListener("click",async()=>{consentDialog.close();const target=previewUrl;previewUrl="";const output=document.querySelector("#remote-result");output.replaceChildren();output.hidden=false;output.scrollIntoView({behavior:"smooth",block:"nearest"});document.querySelector("#remote-scan-status").textContent="Fetching text through the Sentinel server...";try{const preview=await apiRequest("/api/preview",{method:"POST",body:JSON.stringify({url:target,consent:true})});output.append(el("div","remote-verdict",`Text-only preview / ${preview.title||preview.finalDomain}`),el("div","remote-details",`HTTP ${preview.httpStatus} / ${preview.contentType}`),el("pre","remote-preview-text",preview.text));document.querySelector("#remote-scan-status").textContent=preview.notice||"Preview loaded. Page scripts were not run.";}catch(error){output.append(el("div","remote-details",`Preview unavailable: ${error.message}`));document.querySelector("#remote-scan-status").textContent="No page content was returned.";}});
+		const navToggle=document.querySelector("#nav-toggle");
+		const mainNav=document.querySelector("#main-nav");
+		const navOverlay=document.querySelector("#nav-overlay");
+		function setMobileNav(open){
+			if (!mainNav || !navToggle) return;
+			const isMobile = window.matchMedia("(max-width: 760px)").matches;
+			if (!isMobile){
+				mainNav.classList.remove("is-open");
+				navOverlay.classList.remove("is-visible");
+				navToggle.setAttribute("aria-expanded","false");
+				return;
+			}
+			mainNav.classList.toggle("is-open", open);
+			navOverlay.classList.toggle("is-visible", open);
+			navToggle.setAttribute("aria-expanded", String(open));
+		}
+		navToggle.addEventListener("click",()=>{
+			const open = !mainNav.classList.contains("is-open");
+			setMobileNav(open);
+		});
+		navOverlay.addEventListener("click",()=>setMobileNav(false));
+		window.addEventListener("resize",()=>setMobileNav(false));
+		document.addEventListener("click",event=>{
+			const link = event.target.closest("a");
+			if (!link) return;
+			const href = link.getAttribute("href") || "";
+			if (/^mailto:/i.test(href) || /^tel:/i.test(href)) {
+				event.preventDefault();
+				window.location.href = href;
+			}
+		});
+		const renderOfficialDirectory = renderDirectory;
+		renderDirectory = function(){
+			renderOfficialDirectory();
+			const query=document.querySelector("#directory-search").value.trim().toLowerCase();
+			const category=document.querySelector("#directory-category").value;
+			const list=document.querySelector("#directory-list");
+			if(category==="all"||category==="saved")for(const contact of contacts){
+				const mainDomain=normalizeDomain(contact.main_domain||contact.source);
+				if(!`${contact.organization} ${contact.type} ${contact.value} ${contact.source} ${mainDomain}`.toLowerCase().includes(query))continue;
+				const card=el("article","directory-card"),body=document.createElement("div");
+				body.append(el("div","directory-name",contact.organization),el("div","directory-meta","SAVED CONTACT / USER-ADDED"),el("div","directory-meta",`MAIN DOMAIN / ${mainDomain || "not set"}`));
+				const channels=el("div","directory-channels"),row=el("div","directory-channel");
+				const label=el("strong","",contact.type.toUpperCase()),value=el("a","",contact.value);
+				value.href=contact.type==="email"?`mailto:${contact.value}`:`tel:${contact.value}`;
+				row.append(label,value);channels.append(row);body.append(channels);
+				const source=el("a","directory-source","Saved source ↗");
+				source.href=contact.source;source.target="_blank";source.rel="noopener noreferrer";
+				card.append(body,source);list.append(card);
+			}
+			document.querySelector("#directory-count").textContent=`${list.children.length} / ${officialDirectory.length+contacts.length} ENTRIES`;
+		};
+		function renderSenderMatch(){
+			const value=document.querySelector("#sender-input").value.trim();
+			const container=document.querySelector("#sender-result");
+			container.replaceChildren();
+			if(!value){container.append(el("p","sender-result-detail","Sender check comes first. Enter the email address or phone number shown with the message to check it against saved contacts and the official directory."));return;}
+			const outcome=inspectSender(value, document.querySelector("#message-input").value || "");
+			const sentDomain = parseSenderIdentity(value).domain;
+			const trustedMatch = outcome.match && ((outcome.match.main_domain && sentDomain && matchesDomain(sentDomain, normalizeDomain(outcome.match.main_domain))) || (outcome.match.source && sentDomain && matchesDomain(sentDomain, normalizeDomain(outcome.match.source))));
+			if(!outcome.match){container.append(el("p","sender-result-title",outcome.finding.title),el("p","sender-result-detail",outcome.impersonationMessage || outcome.finding.why));if(!outcome.organization)return;}
+			const match=outcome.match||outcome.organization;
+			const organization=match.organization;
+			if(outcome.match)container.append(el("p","sender-result-title",trustedMatch ? `Same official domain: ${organization}` : `Exact match: ${organization}`),el("p","sender-result-detail",trustedMatch ? `This sender matches the same official domain family as ${organization}. The message is much more likely to be legitimate if the request still looks consistent with the app or official contact flow.` : "This address or number is listed, but a sender name can still be copied. Check unexpected requests through the official app or number."));
+			else if(outcome.organization)container.append(el("p","sender-result-title",`Impersonating ${outcome.organization.organization}`),el("p","sender-result-detail",`This message is pretending to be from ${outcome.organization.organization}. The sender address does not match the official domain.`));
+			const source=el("a","contact-source","Open official source ↗");
+			source.href=match.source;source.target="_blank";source.rel="noopener noreferrer";container.append(source);
+		}
+		function matchesDomain(host, domain){return host===domain||host.endsWith(`.${domain}`);}
+		document.querySelector("#sender-input").addEventListener("input",()=>{renderSenderMatch();if(result.classList.contains("visible"))scanMessage();});
+			renderDirectory();renderContacts();renderOfficialTrustedContacts();renderReports();initializeApi();
+		function appendPreviewFindings(){const output=document.querySelector("#remote-result"),previewText=output.querySelector(".remote-preview-text");if(!previewText||output.querySelector(".preview-findings"))return;const text=previewText.textContent,findings=[];const add=(title,detail,risk="warning")=>findings.push({title,detail,risk});if(/\b(?:password|passcode|one[- ]time (?:password|code)|otp|verification code|security code|pin|cvv)\b/i.test(text))add("Credential or payment secret mentioned","Page text refers to an OTP, password, PIN, CVV, or verification code. Do not share these details in response to the page.","danger");if(/\b(?:urgent|immediately|act now|final warning|account.{0,30}(?:locked|suspended|closed)|within \d+ hours?)\b/i.test(text))add("Urgency or account pressure","The page uses deadline or account-threat language. Verify independently through the organization's official app or contact channel.");if(/\b(?:bit\.ly|tinyurl\.com|t\.co|tiny\.cc|cutt\.ly)\b/i.test(text))add("Shortened link in page text","A shortened URL hides its destination. Do not follow it without verifying the full destination.");if(/\b[\w-]+\.(?:exe|scr|bat|cmd|msi|js|vbs|ps1|hta|jar)(?:\b|$)/i.test(text))add("Executable or script file referenced","The page text refers to a potentially active file type. Do not download or run unexpected files.","danger");if(/\b(?:claim|receive|unlock|verify)\b[^.!?\n]{0,100}\b(?:prize|reward|refund|payment|bank account)\b/i.test(text))add("Financial or reward lure","The page connects a reward, refund, or account action with a claim or verification request. Confirm the offer on an official channel.");const heading=el("div","remote-verdict",findings.length?`Text findings / ${findings.length} signal${findings.length===1?"":"s"}`:"Text findings / No matching warning patterns");heading.className+=findings.some(item=>item.risk==="danger")?" signal-danger":"";const list=el("ul","signals preview-findings");if(findings.length){for(const finding of findings){const item=el("li",finding.risk==="danger"?"signal-danger":"signal-warning"),title=el("strong","",`${finding.risk==="danger"?"HIGH RISK":"REVIEW"} / ${finding.title}`),detail=el("span","",finding.detail);item.append(title,detail);list.append(item);}}else list.append(el("li","","No listed text patterns were detected. This does not prove the page, sender, or destination is safe."));output.append(heading,list);}
+		new MutationObserver(appendPreviewFindings).observe(document.querySelector("#remote-result"),{childList:true});
+		function escapePreviewText(value){return String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#39;");}
+		function createSafePreviewScreen(title,text){const shell=el("section","safe-preview-shell"),chrome=el("div","safe-preview-chrome"),dot=el("span","safe-preview-dot",""),caption=el("span","","SANITIZED PREVIEW / ACTIVE CONTENT DISABLED"),frame=document.createElement("iframe"),safeTitle=escapePreviewText(title||"Linked page"),safeBody=safePreviewMarkup||`<pre>${escapePreviewText(text)}</pre>`;frame.className="safe-preview-frame";frame.title=`Safe preview: ${title||"linked page"}`;frame.setAttribute("sandbox","");frame.referrerPolicy="no-referrer";frame.srcdoc=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'"><style>body{margin:0;padding:22px;color:#252329;background:#fff;font:14px/1.6 system-ui,sans-serif}main{max-width:760px;margin:0 auto}h1{margin:0 0 16px;font-size:20px;line-height:1.3}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;max-width:100%}th,td{padding:5px 8px;border:1px solid #bbb;text-align:left}img{max-width:100%}</style></head><body><main><h1>${safeTitle}</h1>${safeBody}</main></body></html>`;const scanText=el("pre","remote-preview-text",text);scanText.hidden=true;chrome.append(dot,caption);shell.append(frame,scanText);return shell;}
+		new MutationObserver(()=>{
+			const output=document.querySelector("#remote-result"),text=output.querySelector(".remote-preview-text");
+			if(!text||output.querySelector(".safe-preview-frame"))return;
+			const heading=output.querySelector(".remote-verdict"),title=(heading?.textContent||"Linked page").replace(/^Text-only preview\s*\/\s*/i,"");
+			text.replaceWith(createSafePreviewScreen(title,text.textContent));
+			if(heading)heading.textContent=heading.textContent.replace(/^Text-only preview/,"Safe page preview");
+		}).observe(document.querySelector("#remote-result"),{childList:true,subtree:true});
+		function resetConsentDialog(){document.querySelector("#consent-title").textContent="Preview this link safely?";document.querySelector("#consent-copy").textContent="The Sentinel server requests the public page and shows readable text. It does not open an interactive browser tab or run page scripts, cookies, or downloads.";document.querySelector("#consent-warning").textContent="Private links and account/reset tokens should not be submitted. The destination can see the server's network address.";document.querySelector("#confirm-scan").hidden=false;document.querySelector("#confirm-visual-scan").hidden=true;}
+		async function submitVisualPreview(url){const button=document.querySelector("#visual-preview-button"),status=document.querySelector("#remote-scan-status"),output=document.querySelector("#remote-result");button.disabled=true;output.replaceChildren();output.hidden=false;output.scrollIntoView({behavior:"smooth",block:"nearest"});status.textContent="Submitting this URL privately to urlscan.io for a remote screenshot...";try{const submission=await apiRequest("/api/scans",{method:"POST",body:JSON.stringify({url,consent:true})});const deadline=Date.now()+90000;let scan=null;while(Date.now()<deadline){await new Promise(resolve=>setTimeout(resolve,4000));scan=await apiRequest(`/api/scans/${encodeURIComponent(submission.scanId)}`);if(scan.status==="complete")break;status.textContent="Remote browser is loading the page. Waiting for the screenshot...";}if(!scan||scan.status!=="complete")throw new Error("Remote screenshot timed out. Try again later.");output.replaceChildren();const heading=el("div","remote-verdict",`Visual sandbox / ${scan.pageTitle||scan.finalDomain||scan.submittedDomain}`),details=el("div","remote-details",`${scan.riskLabel||"Scan complete"} / ${scan.finalDomain||scan.submittedDomain||"unknown domain"}. ${scan.notice||"The page was opened by urlscan.io, not on this device."}`),image=document.createElement("img");image.className="remote-preview";image.alt="Screenshot captured by urlscan.io in its remote browser sandbox";image.referrerPolicy="no-referrer";image.src=scan.screenshotUrl;image.addEventListener("error",()=>{image.alt="Remote screenshot is not available.";},{once:true});output.append(heading,details,image);const link=el("a","remote-links","Open private sandbox report ↗");link.href=scan.resultUrl;link.target="_blank";link.rel="noopener noreferrer";link.referrerPolicy="no-referrer";output.append(link);status.textContent="Remote screenshot ready. The page ran in urlscan.io, not in your browser.";}catch(error){output.replaceChildren(el("div","remote-details",`Visual sandbox unavailable: ${error.message}`));status.textContent="No remote screenshot was produced.";}finally{updatePreviewButton();}}
+		document.querySelector("#visual-preview-button").addEventListener("click",()=>{const urls=messageInput.value.match(urlPattern)||[];urlPattern.lastIndex=0;if(!urls.length||!urlscanConfigured)return;previewUrl=/^https?:/i.test(urls[0])?urls[0]:`https://${urls[0]}`;document.querySelector("#consent-title").textContent="Open this link in a private visual sandbox?";document.querySelector("#consent-copy").textContent="urlscan.io will receive the full link and load it in its remote browser to capture how the page looks. The page does not open on your device.";document.querySelector("#consent-warning").textContent="Do not submit password-reset links, private document URLs, or personal tokens. The provider will process the link even though the scan is private.";document.querySelector("#confirm-scan").hidden=true;document.querySelector("#confirm-visual-scan").hidden=false;document.querySelector("#consent-domain").textContent=previewUrl;consentDialog.showModal();});
+		document.querySelector("#confirm-visual-scan").addEventListener("click",()=>{const target=previewUrl;previewUrl="";consentDialog.close();resetConsentDialog();if(target)submitVisualPreview(target);});
+		document.querySelector("#cancel-scan").addEventListener("click",()=>{previewUrl="";consentDialog.close();resetConsentDialog();});
+		function parseSenderIdentity(value) {
+			const angleAddress = value.match(/^\s*(.*?)\s*<\s*([^<>]+@[^<>]+)\s*>\s*$/);
+			const email = angleAddress ? angleAddress[2].trim() : (value.match(/[^\s<>]+@[^\s<>]+/) || [""])[0];
+			const displayName = angleAddress ? angleAddress[1].trim().replace(/^['"]|['"]$/g, "") : "";
+			return {
+				email,
+				displayName,
+				domain: email.includes("@") ? email.split("@").pop().toLowerCase() : "",
+				localPart: email.includes("@") ? email.split("@")[0].toLowerCase() : ""
+			};
+		}
+		function inspectSender(sender, messageText=""){
+			const email=sender.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]||"";
+			const displayName=sender.match(/^\s*(.*?)\s*<[^<>]+@[^<>]+>/)?.[1]?.replace(/["']/g,"").trim()||"";
+			const digits=sender.replace(/\D/g,"");
+			const isPhone=!email&&digits.length>=7;
+			const evidence=sender||"No sender email, phone number, or name was entered.";
+			const finding=(title,why,next,severity="warning",organization="")=>({title,evidence,why,next,severity,organization});
+			if(!email&&!isPhone)return{status:sender?"invalid":"missing",match:null,finding:finding("Sender could not be verified",sender?"Enter the actual email address or phone number, not just a display name. A name by itself can be copied.":"No sender details were provided, so Sentinel cannot check who sent this message.","Check the From address or phone number before trusting the message.")};
+			const normalizedEmail=email.toLowerCase(),normalizedDigits=digits;
+			const senderDomain=email?normalizedEmail.split("@").pop():"";
+			const sourceDomain=source=>{try{return new URL(source).hostname.toLowerCase().replace(/^www\./,"");}catch{return "";}};
+			const savedMatch=contacts.find(contact=>contact.type===(email?"email":"phone")&&(email?contact.value.toLowerCase()===normalizedEmail:contact.value.replace(/\D/g,"")===normalizedDigits));
+			const referenceEntries = trustedReferenceEntries();
+			const officialMatch=referenceEntries.find(entry=>email?entry.emails.some(channel=>channel.toLowerCase()===normalizedEmail):entry.phones.some(channel=>channel.replace(/\D/g,"")===normalizedDigits));
+			const officialDomainEntry = email ? referenceEntries.find(entry => {
+				const hosts = [...new Set([...(entry.emails || []).map(address => address.split("@").pop()), sourceDomain(entry.source), sourceDomain(entry.portal), ...((entry.note||"").match(/@[a-z0-9.-]+\.[a-z]{2,}/gi)||[]).map(address => address.slice(1).replace(/[.,;]+$/, ""))].filter(Boolean))];
+				return hosts.some(domain => matchesDomain(senderDomain, domain));
+			}) : null;
+			const trustedSourceMatch = email && contacts.find(contact => {
+				const host = sourceDomain(contact.source);
+				return host && matchesDomain(senderDomain, host);
+			});
+			const sameMainDomainMatch = email && contacts.find(contact => {
+				const mainDomain = normalizeDomain(contact.main_domain || contact.source || "");
+				return mainDomain && matchesDomain(senderDomain, mainDomain);
+			});
+			const exactMatch=savedMatch || officialMatch || trustedSourceMatch || officialDomainEntry || sameMainDomainMatch;
+			const identity=email?`${displayName} ${normalizedEmail.split("@")[0]}`:`${displayName} ${sender}`;
+			const identityTokens=identity.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+			const genericWords=new Set(["bank","philippines","the","official","support","service","services","unibank","consumer","assistance","department","public","office","center","help","contact","customer","care","inquiry","inquiries","information","online","account","security","alert","alerts","notification","notifications","admin","team","mail","email","noreply","info","news","media","com","net","org","gov","edu","mil","int","app"]);
+			const aliasesFor=entry=>entry.organization.toLowerCase().split(/[^a-z0-9]+/).filter(word=>word.length>=3&&!genericWords.has(word));
+			const claimsBrand=entry=>aliasesFor(entry).some(alias=>identityTokens.some(token=>token===alias||(alias.length>=4&&token.startsWith(alias))));
+			const officialDomainsFor=entry=>[...entry.emails.map(address=>address.split("@").pop()),sourceDomain(entry.source),sourceDomain(entry.portal),...(entry.note?.match(/@[a-z0-9.-]+\.[a-z]{2,}/gi)||[])].filter(Boolean);
+			const claimsBrandInMessage = entry => {
+				const text=(messageText||"").toLowerCase();
+				if(!text)return false;
+				const tokens=aliasesFor(entry).map(token => token.toLowerCase());
+				return tokens.some(token => token.length >= 3 && text.includes(token));
+			};
+			const claimedEntry=referenceEntries.find(entry=>claimsBrand(entry));
+			const copiedDomainEntry=!exactMatch&&email&&referenceEntries.find(entry => {
+				const hosts = officialDomainsFor(entry);
+				return hosts.some(domain => looksLikeOfficialDomainVariant(senderDomain, domain));
+			});
+			const spoofedDomainEntry=!exactMatch&&email&&referenceEntries.find(entry=>aliasesFor(entry).some(alias=>senderDomain.split(".").some(label=>{
+				const normalized=label.replace(/0/g,"o").replace(/1/g,"l").replace(/3/g,"e").replace(/5/g,"s").replace(/8/g,"b").replace(/[^a-z0-9]/g,"");
+				if(normalized===alias)return true;
+				if(alias.length<4||!(normalized.startsWith(alias)||normalized.endsWith(alias)||editDistanceAtMostOne(normalized,alias)))return false;
+				return true;
+			}))&&!officialDomainsFor(entry).some(domain=>matchesDomain(senderDomain,domain)));
+			const claimedDomainIsOfficial=claimedEntry&&email&&officialDomainsFor(claimedEntry).some(domain=>matchesDomain(senderDomain,domain));
+			const impersonated=claimedEntry&&!(claimedDomainIsOfficial||(!email&&exactMatch))?claimedEntry:(copiedDomainEntry||spoofedDomainEntry);
+			if(impersonated){
+				const officialDomain=officialDomainsFor(impersonated)[0]||"the official contact page";
+				const copiedDomainReason = copiedDomainEntry && looksLikeOfficialDomainVariant(senderDomain, officialDomain) && senderDomain !== officialDomain ? `The sender uses ${senderDomain}, which is a close copy of ${officialDomain}, not the genuine official domain.` : `The sender appears to use ${impersonated.organization}'s name, but the part after @ is ${senderDomain}, not a listed official address such as ${officialDomain}.`;
+				const brandMention = claimsBrandInMessage(impersonated) ? ` The message also mentions ${impersonated.organization}, which matches the copied brand and supports the impersonation signal.` : "";
+				const why=email?`${copiedDomainReason}${brandMention} A copied bank name does not prove the email came from that bank.`:`The sender name mentions ${impersonated.organization}, but this number is not listed for that organization. Caller names can be copied.`;
+				return{status:"danger",match:null,organization:impersonated,impersonationOrganization:impersonated.organization,impersonationMessage:`This message is pretending to be from ${impersonated.organization}.`,finding:finding("Fraudulent sender / copied official domain",why,`Do not reply, click links, or share an OTP or password. Contact ${impersonated.organization} using the number or website in the official directory.`,"danger",impersonated.organization)};
+			}
+			if(exactMatch){
+				const sameFamily = sameMainDomainMatch || trustedSourceMatch || officialDomainEntry;
+				const message = sameFamily
+					? `This sender uses the same trusted domain family as ${exactMatch.organization}. The email or number belongs to the same official domain group, so the sender is considered verified for this check.`
+					: `This exact email address or phone number is listed for ${exactMatch.organization}. That is a useful check, but a sender name or number can still be copied.`;
+				return{status:"matched",match:exactMatch,finding:finding(sameFamily?"Sender matches a trusted domain family":"Sender matches a listed contact",message,"Check any links or requests separately. Never share a one-time code, password, PIN, or CVV.","info",exactMatch.organization)};
+			}
+			const kind=email?"email address":"phone number";
+			const why=email?"This looks like an email address, but the exact address is not in your saved contacts or the official directory. That alone does not prove it is fake; we cannot confirm who owns it.":"This looks like a phone number, but it is not in your saved contacts or the official directory. That alone does not prove it is fake; we cannot confirm who is calling.";
+			return{status:"unknown",match:null,finding:finding("Sender is not verified",why,`Do not trust the display name alone. Check this ${kind} against the organization's official app or contact page before replying.`)};
+		}
+		function editDistanceAtMostOne(left,right){
+			if(Math.abs(left.length-right.length)>1)return false;
+			let leftIndex=0,rightIndex=0,differences=0;
+			while(leftIndex<left.length&&rightIndex<right.length){
+				if(left[leftIndex]===right[rightIndex]){leftIndex++;rightIndex++;continue;}
+				differences+=1;
+				if(differences>1)return false;
+				if(left.length>=right.length)leftIndex++;
+				if(right.length>=left.length)rightIndex++;
+			}
+			return true;
+		}
+	</script>
+	<!--
+			dot.className = "status-dot";
+			dot.setAttribute("aria-hidden", "true");
+			if (!connected) dot.style.background = "var(--amber)";
+			status.append(dot, document.createTextNode(` ${text}`));
+		}
+
+		async function loadContacts() {
+			const data = await apiRequest("/api/contacts");
+			savedContacts = data.contacts;
+			renderContacts();
+		}
+
+		async function loadReports() {
+			const data = await apiRequest("/api/reports");
+			savedReports = data.reports;
+			renderReports();
+		}
+
+		async function initializeApi() {
+			try {
+				const health = await apiRequest("/api/health");
+				apiOnline = health.status === "ok";
+				const visibleUrl = visibleText.match(urlPattern)?.[0];
+				if (!visibleUrl) continue;
+				let actualHost;
+				let displayedHost;
+				try {
+					actualHost = new URL(toScannableUrl(anchor[2])).hostname.toLowerCase();
+					displayedHost = new URL(toScannableUrl(visibleUrl)).hostname.toLowerCase();
+				} catch { continue; }
+				if (actualHost !== displayedHost) findings.push({ title: "Displayed link and destination disagree", why: `The visible link says ${displayedHost}, but its HTML href points to ${actualHost}. This mismatch can hide a phishing destination.`, severity: "danger", points: 4, next: "Do not click this link. Navigate to the official site by typing the verified address yourself." });
+			}
+			const messageLower = text.toLowerCase();
+			for (const contact of verifiedSourceEntries()) {
+				const organizationTokens = contact.organization.toLowerCase().split(/[^a-z0-9]+/).filter(token => token.length >= 3 && !["the", "and", "inc", "corp", "company", "official", "department", "office", "bank", "service"].includes(token));
+				if (!organizationTokens.some(token => messageLower.includes(token))) continue;
+				if (hosts.length && !hosts.some(host => contact.domains.some(officialHost => host === officialHost || host.endsWith(`.${officialHost}`)))) {
+					const officialHost = contact.domains[0];
+					findings.push({ title: "Mentioned organization and link disagree", why: `The text mentions ${contact.organization}, but none of the detected links match its published official domain (${officialHost}). A name in a message can be impersonated.`, severity: "warning", points: 2, next: `Do not click this link. Open ${contact.organization}'s official source or contact it through a known channel.` });
+				}
+			}
+			const attachmentMatches = text.match(/\b[\w-]+\.(?:exe|scr|bat|cmd|msi|js|vbs|ps1|hta|jar|zip|7z|rar|iso)\b/gi) || [];
+			if (attachmentMatches.length) {
+				const uniqueAttachments = [...new Set(attachmentMatches)];
+				const executableAttachments = uniqueAttachments.filter(name => /\.(?:exe|scr|bat|cmd|msi|js|vbs|ps1|hta|jar)$/i.test(name));
+				findings.push({ title: executableAttachments.length ? "Potentially active attachment named" : "Archive attachment mentioned", why: `${uniqueAttachments.join(", ")} ${executableAttachments.length ? "can execute code or run scripts. The message text does not confirm that a file was actually attached or that it is infected." : "may contain executable files; the contents have not been inspected."}`, severity: executableAttachments.length ? "danger" : "warning", points: executableAttachments.length ? 4 : 2, next: "Do not open an unexpected attachment or enable macros. Confirm it with the sender through a separate channel and scan it with endpoint security." });
+			}
+			const senderCheck = sender ? lookupSavedSender(sender) : { status: "not-provided", matches: [] };
+			for (const warning of senderCheck.warnings || []) {
+				findings.push({ title: "Possible organization-name impersonation", why: warning.detail, severity: "warning", points: 2, next: `Do not rely on the display name. Verify ${warning.organization} using its saved official source or another known channel.` });
+			}
+			if (senderCheck.matches.length && hosts.length) {
+				for (const contact of senderCheck.matches) {
+					let sourceHost;
+					try { sourceHost = new URL(contact.source).hostname.toLowerCase(); } catch { continue; }
+					if (!hosts.some(host => host === sourceHost || host.endsWith(`.${sourceHost}`))) {
+						findings.push({ title: "Sender contact and link domain disagree", why: `The sender exactly matches your saved ${contact.organization} contact, but the message link does not match its saved source domain (${sourceHost}). This mismatch may indicate impersonation; a sender address can also be spoofed.`, severity: "danger", points: 4, next: `Do not click this link. Contact ${contact.organization} using the saved official source or another channel you already trust.` });
+					}
+				}
+			}
+			const uniqueFindings = [...new Map(findings.map(finding => [`${finding.title}:${finding.why}`, finding])).values()];
+			const score = uniqueFindings.reduce((total, finding) => total + finding.points, 0);
+			const trustedSenderDomain = Boolean(sender && senderCheck.matches.length && senderCheck.matches.some(contact => {
+				const host = normalizeDomain(contact.source);
+				return host && parseSenderIdentity(sender).domain && (parseSenderIdentity(sender).domain === host || parseSenderIdentity(sender).domain.endsWith(`.${host}`));
+			}));
+			const level = trustedSenderDomain && !uniqueFindings.some(finding => finding.severity === "danger") ? "clear" : uniqueFindings.some(finding => finding.severity === "danger") || (score >= 5 && uniqueFindings.length >= 3) ? "danger" : uniqueFindings.length ? "warning" : "clear";
+			return { level, score, findings: uniqueFindings, urlCount: urls.length, hosts: [...new Set(hosts)], senderCheck };
+		}
+
+		function formatFinding(finding) {
+			return `${finding.severity === "danger" ? "HIGH RISK" : "REVIEW"} / ${finding.title}. ${finding.why} Next: ${finding.next}`;
+		}
+
+		function analyzeEmailHeaders(rawHeaders) {
+			const unfolded = rawHeaders.replace(/\r?\n[\t ]+/g, " ");
+			const fields = new Map();
+			for (const line of unfolded.split(/\r?\n/)) {
+				const separator = line.indexOf(":");
+				if (separator < 1) continue;
+				const name = line.slice(0, separator).trim().toLowerCase();
+				const value = line.slice(separator + 1).trim();
+				if (!fields.has(name)) fields.set(name, []);
+				fields.get(name).push(value);
+			}
+			const first = name => fields.get(name)?.[0] || "";
+			const addressDomain = value => {
+				const address = value.match(/<?[^<>\s,;]+@([^<>\s,;]+)/);
+				return address ? address[1].replace(/[)>.,;]+$/, "").toLowerCase() : "";
+			};
+			const from = first("from");
+			const senderIdentity = parseSenderIdentity(from);
+			const fromDomain = senderIdentity.domain || addressDomain(from);
+			const replyTo = first("reply-to");
+			const replyDomain = addressDomain(replyTo);
+			const returnPath = first("return-path");
+			const returnDomain = addressDomain(returnPath);
+			const findings = [];
+			if (!from) findings.push({ title: "From field missing", detail: "No From header was found. This paste may be incomplete or may not contain the original message headers." });
+			if (replyDomain && fromDomain && replyDomain !== fromDomain) findings.push({ title: "Reply-To domain differs", detail: `The visible From address uses ${fromDomain}, while replies go to ${replyDomain}. This can be legitimate, but it is a mismatch to verify.` });
+			if (returnDomain && fromDomain && returnDomain !== fromDomain) findings.push({ title: "Return-Path domain differs", detail: `The delivery return path uses ${returnDomain}, not ${fromDomain}. Mailing services and forwarding can cause this, so treat it as context rather than proof of fraud.` });
+			if (from) {
+				for (const warning of lookupSavedSender(from).warnings || []) {
+					findings.push({ title: "Possible copied organization name", detail: `${warning.detail} Compare the original sender address and verify it through the saved official contact.` });
+				}
+			}
+			const authResults = fields.get("authentication-results") || [];
+			const authStatuses = [];
+			for (const header of authResults) {
+				for (const match of header.matchAll(/\b(spf|dkim|dmarc)\s*=\s*(pass|fail|softfail|neutral|none|temperror|permerror)\b/gi)) {
+					authStatuses.push({ mechanism: match[1].toUpperCase(), status: match[2].toLowerCase() });
+				}
+			}
+			for (const auth of authStatuses) {
+				if (["fail", "softfail", "permerror"].includes(auth.status)) findings.push({ title: `${auth.mechanism} ${auth.status}`, detail: `${auth.mechanism} did not pass according to the pasted Authentication-Results field. Confirm this is the trusted result inserted by your receiving mail provider.` });
+			}
+			return { from, fromDisplayName: senderIdentity.displayName, fromDomain, replyTo, replyDomain, returnPath, returnDomain, authStatuses, receivedCount: fields.get("received")?.length || 0, findings };
+		}
+
+		function renderHeaderAnalysis() {
+			const result = analyzeEmailHeaders(document.querySelector("#header-input").value.trim());
+			const container = document.querySelector("#header-result");
+			container.replaceChildren();
+			container.hidden = false;
+			const overview = document.createElement("div");
+			overview.className = "remote-details";
+			const fields = [
+				`From name: ${result.fromDisplayName || "not shown"}`,
+				`From domain: ${result.fromDomain || "not found"}`,
+				`Reply-To domain: ${result.replyDomain || "not found"}`,
+				`Return-Path domain: ${result.returnDomain || "not found"}`,
+				`Received hops in pasted text: ${result.receivedCount}`,
+				`SPF / DKIM / DMARC: ${result.authStatuses.length ? result.authStatuses.map(item => `${item.mechanism} ${item.status}`).join(" · ") : "not found in pasted headers"}`
+			];
+			for (const field of fields) {
+				const item = document.createElement("div");
+				item.textContent = field;
+				overview.append(item);
+			}
+			container.append(overview);
+			for (const finding of result.findings) {
+				const item = document.createElement("div");
+				item.className = "header-finding";
+				const title = document.createElement("strong");
+				title.textContent = finding.title;
+				const detail = document.createElement("div");
+				detail.textContent = finding.detail;
+				item.append(title, detail);
+				container.append(item);
+			}
+			if (!result.findings.length) {
+				const item = document.createElement("div");
+				item.className = "header-finding";
+				item.textContent = result.authStatuses.length ? "No mismatch or explicit authentication failure was found in the pasted fields. This does not authenticate the message." : "Insufficient header evidence. A normal-looking From line is not authentication.";
+				container.append(item);
+			}
+		}
+
+		const quizQuestions = [
+			{ prompt: "A text says your parcel is held and asks you to pay a small fee through a shortened link.", answer: 0, why: "Unexpected delivery fees plus a hidden destination are common lures. Check tracking in the carrier's official app." },
+			{ prompt: "A friend texts: 'Are we still meeting at the library tomorrow?' ", answer: 1, why: "There are no obvious scam signals in the text alone. That still cannot prove who sent it." },
+			{ prompt: "A bank message says your account will close unless you send an OTP in reply.", answer: 0, why: "An OTP is an authentication secret. Do not disclose it to anyone who contacted you." },
+			{ prompt: "An unexpected email has a PDF invoice from a familiar display name, but you have not checked the sender address.", answer: 2, why: "A display name is easy to spoof. Verify with the sender using a separate channel before opening unexpected files." },
+			{ prompt: "A message announces a prize you did not enter and asks for your card details to claim it.", answer: 0, why: "An unexpected prize plus a request for payment details is a strong scam pattern. Do not submit the information." }
+		];
+		let quizIndex = 0;
+		let quizScore = 0;
+		function renderQuiz() {
+			const progress = document.querySelector("#quiz-progress");
+			const prompt = document.querySelector("#quiz-prompt");
+			const choices = document.querySelector("#quiz-choices");
+			const feedback = document.querySelector("#quiz-feedback");
+			const next = document.querySelector("#quiz-next");
+			const restart = document.querySelector("#quiz-restart");
+			choices.replaceChildren();
+			feedback.hidden = true;
+			next.disabled = true;
+			restart.hidden = true;
+			if (quizIndex >= quizQuestions.length) {
+				progress.textContent = "Complete";
+				prompt.textContent = `Your score: ${quizScore} / ${quizQuestions.length}`;
+				feedback.textContent = quizScore >= 4 ? "Strong result. Keep verifying unexpected requests independently." : "Review the explanations and practice checking the sender, request, and destination separately.";
+				feedback.hidden = false;
+				next.hidden = true;
+				restart.hidden = false;
+				return;
+			}
+			next.hidden = false;
+			progress.textContent = `Question ${quizIndex + 1} of ${quizQuestions.length} / Score ${quizScore}`;
+			prompt.textContent = quizQuestions[quizIndex].prompt;
+			["Suspicious signals", "No obvious signals", "Needs independent verification"].forEach((label, choiceIndex) => {
+				const button = document.createElement("button");
+				button.className = "secondary";
+				button.type = "button";
+				button.textContent = label;
+				button.addEventListener("click", () => {
+					const correct = choiceIndex === quizQuestions[quizIndex].answer;
+					if (correct) quizScore += 1;
+					feedback.textContent = `${correct ? "Correct." : "Review this one."} ${quizQuestions[quizIndex].why}`;
+					feedback.hidden = false;
+					choices.querySelectorAll("button").forEach(choice => { choice.disabled = true; });
+					next.disabled = false;
+				});
+				choices.append(button);
+			});
+		}
+
+		function parseSenderIdentity(value) {
+			const angleAddress = value.match(/^\s*(.*?)\s*<\s*([^<>]+@[^<>]+)\s*>\s*$/);
+			const email = angleAddress ? angleAddress[2].trim() : (value.match(/[^\s<>]+@[^\s<>]+/) || [""])[0];
+			const displayName = angleAddress ? angleAddress[1].trim().replace(/^["']|["']$/g, "") : "";
+			return { email, displayName, domain: email.includes("@") ? email.split("@").pop().toLowerCase() : "", localPart: email.includes("@") ? email.split("@")[0].toLowerCase() : "" };
+		}
+
+		function editDistanceAtMostOne(left, right) {
+			if (Math.abs(left.length - right.length) > 1) return false;
+			let leftIndex = 0;
+			let rightIndex = 0;
+			let differences = 0;
+			while (leftIndex < left.length && rightIndex < right.length) {
+				if (left[leftIndex] === right[rightIndex]) {
+					leftIndex += 1;
+					rightIndex += 1;
+					continue;
+				}
+				differences += 1;
+				if (differences > 1) return false;
+				if (left.length >= right.length) leftIndex += 1;
+				if (right.length >= left.length) rightIndex += 1;
+			}
+			return true;
+		}
+
+		function normalizeBrandToken(value) {
+			return String(value || "").toLowerCase().replace(/0/g, "o").replace(/1/g, "l").replace(/3/g, "e").replace(/5/g, "s").replace(/8/g, "b").replace(/[^a-z0-9]/g, "");
+		}
+
+		function looksLikeOfficialDomainVariant(senderDomain, officialDomain) {
+			if (!senderDomain || !officialDomain || senderDomain === officialDomain) return false;
+			if (matchesDomain(senderDomain, officialDomain)) return false;
+			const senderLabels = senderDomain.split(".").map(normalizeBrandToken).filter(Boolean);
+			const officialLabels = officialDomain.split(".").map(normalizeBrandToken).filter(Boolean);
+			const officialRoot = officialLabels[0];
+			if (!officialRoot) return false;
+			return senderLabels.some(label => {
+				if (!label || label.length < 2) return false;
+				return label === officialRoot || label.includes(officialRoot) || officialRoot.includes(label) || editDistanceAtMostOne(label, officialRoot);
+			});
+		}
+
+		function senderMatchesOfficialDomain(identity, entry) {
+			if (!identity.domain || !Array.isArray(entry.domains) || !entry.domains.length) return false;
+			return entry.domains.some(host => identity.domain === host || identity.domain.endsWith(`.${host}`));
+		}
+
+		function lookupSavedSender(value) {
+			const identity = parseSenderIdentity(value);
+			const type = identity.email ? "email" : "phone";
+			const normalizedValue = type === "email" ? normalizedContactValue(type, identity.email) : normalizedContactValue(type, value);
+			const valid = type === "email"
+				? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identity.email)
+				: normalizedValue.length >= 7;
+			if (!valid) return { status: "invalid", matches: [], warnings: [] };
+			const userMatches = savedContacts.filter(contact => !isPlaceholderContact(contact) && contact.type === type && normalizedContactValue(type, contact.value) === normalizedValue);
+			const sourceDomainMatches = savedContacts.filter(contact => !isPlaceholderContact(contact) && {
+				const host = normalizeDomain(contact.source);
+				return host && identity.domain && matchesDomain(identity.domain, host);
+			});
+			const directoryContacts = officialDirectory.flatMap(entry => [
+				...entry.emails.map(channel => ({ organization: entry.organization, type: "email", value: channel.value, source: entry.source, directoryEntry: true })),
+				...entry.phones.map(channel => ({ organization: entry.organization, type: "phone", value: channel.value, source: entry.source, directoryEntry: true }))
+			]);
+			const directoryMatches = directoryContacts.filter(contact => contact.type === type && normalizedContactValue(type, contact.value) === normalizedValue);
+			const matches = [...new Map([...userMatches, ...sourceDomainMatches.map(contact => ({ ...contact, organization: contact.organization, type: contact.type, value: contact.value, source: contact.source, directoryEntry: false })), ...directoryMatches].map(contact => [`${contact.type}:${normalizedContactValue(contact.type, contact.value)}`, contact])).values()];
+			const warnings = [];
+			if (type === "email" && !matches.length) {
+				const claimedDisplay = normalizeBrandToken(identity.displayName);
+				const localTokens = identity.localPart.split(/[^a-z0-9]+/).map(normalizeBrandToken).filter(Boolean);
+				const genericMailProviders = new Set(["gmail", "outlook", "hotmail", "yahoo", "icloud", "proton", "gmx", "mail", "aol", "live", "msn", "zoho", "fastmail"]);
+				for (const contact of verifiedSourceEntries()) {
+					const brandTokens = [...new Set(contact.organization.toLowerCase().split(/[^a-z0-9]+/).filter(token => token.length >= 3 && !["the","and","inc","corp","company","official","department","office","bank","service","support","customer","care","help","contact","news","media","philippines","online","portal","app","team","group"].includes(token)).map(normalizeBrandToken).filter(Boolean))];
+					const brandMatch = brandTokens.some(token => claimedDisplay.includes(token) || localTokens.includes(token) || identity.domain.includes(token));
+					const officialDomainMatch = senderMatchesOfficialDomain(identity, contact);
+					const lookalikeDomain = !officialDomainMatch && contact.domains.some(host => {
+						const labels = identity.domain.split(".");
+						return labels.some(label => {
+							const normalizedLabel = normalizeBrandToken(label);
+							return normalizedLabel && (normalizedLabel.includes(host.split(".")[0]) || host.split(".")[0].includes(normalizedLabel) || editDistanceAtMostOne(normalizedLabel, host.split(".")[0]));
+						});
+					});
+					const isGenericProvider = genericMailProviders.has(identity.domain.split(".")[0].toLowerCase()) || identity.domain.split(".").every(label => label.length < 4);
+					if (!officialDomainMatch && (brandMatch || lookalikeDomain) && !isGenericProvider) {
+						warnings.push({
+							organization: contact.organization,
+							officialHost: contact.domains[0],
+							senderDomain: identity.domain,
+							severity: "danger",
+							detail: `The sender name or address resembles ${contact.organization}, but the email uses ${identity.domain}, not its published official domain (${contact.domains[0]}). This is a common impersonation pattern and should be treated as suspicious.`
+						});
+					} else if (!officialDomainMatch && brandMatch && isGenericProvider) {
+						warnings.push({
+							organization: contact.organization,
+							officialHost: contact.domains[0],
+							senderDomain: identity.domain,
+							severity: "warning",
+							detail: `The sender name resembles ${contact.organization}, but the address is coming from a generic mail service instead of the organization’s published domain (${contact.domains[0]}). Check the sender through a known official channel before trusting it.`
+						});
+					}
+				}
+			}
+			return { status: "checked", matches, warnings, identity };
+		}
+
+		const __sentinelContactLogicVersion = "2025-10-08-contact-sender-final";
+
+		function displaySenderResult(value) {
+			const container = document.querySelector("#sender-result");
+			container.replaceChildren();
+			const heading = document.createElement("h3");
+			heading.className = "sender-result-title";
+			heading.textContent = "Sender contact check";
+			const detail = document.createElement("p");
+			detail.className = "sender-result-detail";
+			if (!value) {
+				detail.textContent = "No sender email or phone was provided, so the sender was not checked against saved contacts.";
+			} else {
+				const outcome = lookupSavedSender(value);
+				if (outcome.status === "invalid") {
+					detail.textContent = "The sender value could not be recognized as a valid email address or phone number.";
+				} else if (!outcome.matches.length && outcome.warnings.length) {
+					detail.textContent = outcome.warnings.map(warning => warning.detail).join(" ");
+					for (const warning of outcome.warnings) {
+						const contact = verifiedSourceEntries().find(item => item.organization === warning.organization && item.source);
+						if (!contact) continue;
+						const source = document.createElement("a");
+						source.className = "contact-source sender-source";
+						source.href = contact.source;
+						source.target = "_blank";
+						source.rel = "noopener noreferrer";
+						source.referrerPolicy = "no-referrer";
+						source.textContent = `${warning.organization} official source ↗`;
+						container.append(source);
+					}
+				} else if (!outcome.matches.length) {
+					detail.textContent = "No exact match in your saved contacts. This does not prove the sender is fraudulent.";
+				} else {
+					detail.textContent = `Exact match in your saved contacts: ${outcome.matches.map(contact => contact.organization).join(", ")}. This does not authenticate who sent the message or placed the call.`;
+					for (const contact of outcome.matches) {
+						if (contact.directoryEntry) detail.textContent = detail.textContent.replace("your saved contacts", "the published directory");
+						const source = document.createElement("a");
+						source.className = "contact-source sender-source";
+						source.href = contact.source;
+						source.target = "_blank";
+						source.rel = "noopener noreferrer";
+						source.referrerPolicy = "no-referrer";
+						source.textContent = `${contact.organization} source ↗`;
+						container.append(source);
+					}
+				}
+			}
+			container.prepend(heading, detail);
+		}
+
+		function displayResult(text, sender) {
+			const outcome = analyze(text, sender);
+			result.className = `result visible verdict-${outcome.level}`;
+			const titles = { danger: "High risk — treat as suspicious", warning: "Review — suspicious indicators", clear: "No common red flags found" };
+			const icons = { danger: "!", warning: "!", clear: "✓" };
+			document.querySelector("#result-title").textContent = titles[outcome.level];
+			document.querySelector("#result-icon").textContent = icons[outcome.level];
+			document.querySelector("#risk-label").textContent = { danger: "HIGH RISK", warning: "REVIEW", clear: "NO FLAGS*" }[outcome.level];
+			document.querySelector("#result-score").textContent = `${outcome.findings.length} FINDING${outcome.findings.length === 1 ? "" : "S"} / ${outcome.urlCount} URL${outcome.urlCount === 1 ? "" : "S"} / local heuristic`;
+			document.querySelector("#analysis-time").textContent = `Analyzed ${new Date().toLocaleString()}`;
+			const highRiskReasons = outcome.findings.filter(finding => finding.severity === "danger").map(finding => finding.title);
+			const reviewReasons = outcome.findings.map(finding => finding.title);
+			document.querySelector("#result-summary").textContent = outcome.level === "danger"
+				? `${highRiskReasons.length ? `High risk because of: ${highRiskReasons.join("; ")}.` : `Combined indicators raised the risk: ${reviewReasons.join("; ")}.`} This is a pattern-based assessment, not proof that the sender or site is malicious.`
+				: outcome.level === "warning"
+					? `Review because of: ${reviewReasons.join("; ")}. These signals can also occur in legitimate messages, so verify independently.`
+					: "No warning patterns were found in the supplied text. This does not prove the sender, link, or attachment is safe.";
+			const signals = document.querySelector("#signals");
+			signals.replaceChildren();
+			for (const finding of outcome.findings) {
+				const item = document.createElement("li");
+				item.className = finding.severity === "danger" ? "signal-danger" : "signal-warning";
+				const title = document.createElement("strong");
+				title.textContent = `${finding.severity === "danger" ? "HIGH RISK" : "REVIEW"} / ${finding.title}`;
+				const why = document.createElement("span");
+				why.textContent = finding.why;
+				const next = document.createElement("span");
+				next.className = "signal-next";
+				next.textContent = `Next: ${finding.next}`;
+				item.append(title, why, next);
+				signals.append(item);
+			}
+			if (!outcome.findings.length) {
+				const item = document.createElement("li");
+				item.textContent = text ? "No matching warning patterns found in the message or link provided." : "No message or link content was provided.";
+				signals.append(item);
+			}
+			displaySenderResult(sender);
+			const steps = outcome.findings.length
+				? [...new Set(outcome.findings.map(finding => finding.next))]
+				: ["No common warning pattern was found; that does not prove the sender or link is safe.", "For unexpected requests, contact the organization using a number or app you already trust.", "Never share an OTP or password with someone who contacted you first."];
+			const responseSteps = document.querySelector("#response-steps");
+			responseSteps.replaceChildren();
+			for (const step of steps) {
+				const item = document.createElement("li");
+				item.textContent = step;
+				responseSteps.append(item);
+			}
+			latestReportData = {
+				risk: outcome.level,
+				findings: outcome.findings.map(formatFinding),
+				hosts: outcome.hosts,
+				createdAt: new Date().toISOString()
+			};
+			document.querySelector("#report-status").textContent = "Local only. Saving stores signals and hostnames, not the message or sender.";
+			const urls = text.match(urlPattern) || [];
+			const remoteButton = document.querySelector("#remote-scan-button");
+			remoteButton.disabled = !apiOnline || !urlscanConfigured || !urls.length;
+			updatePreviewButtonState();
+			if (!apiOnline) document.querySelector("#remote-scan-status").textContent = "Backend unavailable. No remote scan was performed.";
+			else if (!urls.length) document.querySelector("#remote-scan-status").textContent = "Paste a link to enable remote page scanning.";
+			else if (!urlscanConfigured) document.querySelector("#remote-scan-status").textContent = `${urls.length} link${urls.length === 1 ? "" : "s"} detected. Text preview works now; URLScan sandbox requires its server API key.`;
+			else document.querySelector("#remote-scan-status").textContent = `${urls.length} link${urls.length === 1 ? "" : "s"} detected. Choose a text-only server preview or the URLScan remote sandbox.`;
+			document.querySelector("#remote-result").hidden = true;
+		}
+
+		function updatePreviewButtonState() {
+			const urls = messageInput.value.match(urlPattern) || [];
+			document.querySelector("#preview-link-button").disabled = !apiOnline || !urls.length;
+		}
+
+		function wait(milliseconds) {
+			return new Promise(resolve => setTimeout(resolve, milliseconds));
+		}
+
+		function renderRemoteResult(scan) {
+			const container = document.querySelector("#remote-result");
+			container.replaceChildren();
+			container.hidden = false;
+			const verdict = document.createElement("div");
+			verdict.className = "remote-verdict";
+			verdict.textContent = `${scan.riskLabel} / urlscan.io`;
+			const details = document.createElement("div");
+			details.className = "remote-details";
+			const fields = [
+				`Submitted domain: ${scan.submittedDomain || "unknown"}`,
+				`Final domain: ${scan.finalDomain || "unknown"}${scan.redirected ? " (redirected)" : ""}`,
+				scan.pageTitle ? `Page title: ${scan.pageTitle}` : "Page title: unavailable",
+				scan.httpStatus ? `HTTP status: ${scan.httpStatus}` : "HTTP status: unavailable",
+				scan.score !== null && scan.score !== undefined ? `Provider score: ${scan.score}` : "Provider score: not provided",
+				scan.categories?.length ? `Categories: ${scan.categories.join(", ")}` : "Provider categories: none reported",
+				scan.notice || "This result is not a safety guarantee."
+			];
+			for (const field of fields) {
+				const item = document.createElement("div");
+				item.textContent = field;
+				details.append(item);
+			}
+			container.append(verdict, details);
+			const preview = document.createElement("img");
+			preview.className = "remote-preview";
+			preview.alt = "Screenshot captured by urlscan.io in its remote scanning environment";
+			preview.hidden = true;
+			preview.addEventListener("load", () => { preview.hidden = false; });
+			preview.addEventListener("error", () => {
+				preview.hidden = true;
+				const unavailable = document.createElement("div");
+				unavailable.className = "remote-details";
+				unavailable.textContent = "Remote screenshot is not available.";
+				container.append(unavailable);
+			}, { once: true });
+			preview.src = scan.screenshotUrl;
+			container.append(preview);
+			const providerLink = document.createElement("a");
+			providerLink.className = "remote-links";
+			providerLink.href = scan.resultUrl;
+			providerLink.target = "_blank";
+			providerLink.rel = "noopener noreferrer";
+			providerLink.referrerPolicy = "no-referrer";
+			providerLink.textContent = "Open provider scan details ↗";
+			container.append(providerLink);
+
+			const currentRisk = result.classList.contains("verdict-danger") ? "danger" : result.classList.contains("verdict-warning") ? "warning" : "clear";
+			const riskOrder = { clear: 0, warning: 1, danger: 2 };
+			const combinedRisk = riskOrder[scan.risk] > riskOrder[currentRisk] ? scan.risk : currentRisk;
+			result.className = `result visible verdict-${combinedRisk}`;
+			const localTitle = { danger: "High risk — treat as suspicious", warning: "Review — suspicious indicators", clear: "No common red flags found" };
+			document.querySelector("#result-title").textContent = localTitle[combinedRisk];
+			document.querySelector("#result-icon").textContent = combinedRisk === "clear" ? "✓" : "!";
+			document.querySelector("#risk-label").textContent = { danger: "DANGEROUS", warning: "WARNING", clear: "NO KNOWN THREATS" }[combinedRisk];
+			const remoteFindings = scan.categories.map(category => `urlscan.io category: ${category}`);
+			const findings = [...new Set([...latestReportData.findings, ...remoteFindings])];
+			latestReportData = { ...latestReportData, risk: combinedRisk, findings, hosts: [...new Set([...latestReportData.hosts, ...(scan.domains || [])])] };
+			const signalList = document.querySelector("#signals");
+			for (const finding of remoteFindings) {
+				const item = document.createElement("li");
+				item.textContent = finding;
+				signalList.append(item);
+			}
+			document.querySelector("#result-summary").textContent = combinedRisk === "clear"
+				? "urlscan.io reported no known threat for this private scan. This does not guarantee safety or rule out new or undetected threats."
+				: "Remote scan findings were added above. Do not open the link or share credentials; verify through an official channel.";
+			document.querySelector("#remote-scan-status").textContent = "Remote scan completed. See the provider breakdown and screenshot below.";
+		}
+
+		function renderSafePreview(preview) {
+			const container = document.querySelector("#remote-result");
+			container.replaceChildren();
+			container.hidden = false;
+			const heading = document.createElement("div");
+			heading.className = "remote-verdict";
+			heading.textContent = "Text-only preview / page code was not run";
+			const details = document.createElement("div");
+			details.className = "remote-details";
+			for (const field of [
+				`Page title: ${preview.title || "not provided"}`,
+				`Final domain: ${preview.finalDomain || "unknown"}${preview.redirects ? ` / ${preview.redirects} redirect${preview.redirects === 1 ? "" : "s"}` : ""}`,
+				`HTTP status: ${preview.httpStatus} / ${preview.contentType}`,
+				preview.notice
+			]) {
+				const item = document.createElement("div");
+				item.textContent = field;
+				details.append(item);
+			}
+			const text = document.createElement("pre");
+			text.className = "remote-preview-text";
+			text.textContent = preview.text;
+			const pageAnalysis = analyze(preview.text, "");
+			const analysisHeading = document.createElement("div");
+			analysisHeading.className = "remote-verdict";
+			analysisHeading.textContent = `Local visible-text check / ${pageAnalysis.level === "danger" ? "HIGH RISK" : pageAnalysis.level === "warning" ? "REVIEW" : "NO COMMON FLAGS"}`;
+			const findings = document.createElement("ul");
+			findings.className = "signals";
+			for (const finding of pageAnalysis.findings) {
+				const item = document.createElement("li");
+				item.className = finding.severity === "danger" ? "signal-danger" : "signal-warning";
+				const title = document.createElement("strong");
+				title.textContent = `${finding.severity === "danger" ? "HIGH RISK" : "REVIEW"} / ${finding.title}`;
+				const why = document.createElement("span");
+				why.textContent = finding.why;
+				const next = document.createElement("span");
+				next.className = "signal-next";
+				next.textContent = `Next: ${finding.next}`;
+				item.append(title, why, next);
+				findings.append(item);
+			}
+			if (!pageAnalysis.findings.length) {
+				const item = document.createElement("li");
+				item.textContent = "No known text patterns were found. That does not prove the page or its links are safe.";
+				findings.append(item);
+			}
+			const reportActions = document.createElement("div");
+			reportActions.className = "preview-report-actions";
+			const saveReport = document.createElement("button");
+			saveReport.className = "secondary";
+			saveReport.type = "button";
+			saveReport.textContent = "Save preview report locally";
+			saveReport.disabled = !apiOnline;
+			const reportStatus = document.createElement("span");
+			reportStatus.className = "report-status";
+			reportStatus.textContent = "Stores findings and domains only; page text is not saved.";
+			saveReport.addEventListener("click", async () => {
+				saveReport.disabled = true;
+				try {
+					await apiRequest("/api/reports", {
+						method: "POST",
+						body: JSON.stringify({
+							risk: pageAnalysis.level,
+							findings: pageAnalysis.findings.map(formatFinding),
+							hosts: [...new Set([preview.submittedDomain, preview.finalDomain].filter(Boolean))]
+						})
+					});
+					await loadReports();
+					reportStatus.textContent = "Preview findings saved locally. The page body was not stored.";
+				} catch (error) {
+					reportStatus.textContent = `Report not saved: ${error.message}`;
+				} finally {
+					saveReport.disabled = !apiOnline;
+				}
+			});
+			reportActions.append(saveReport, reportStatus);
+			container.append(heading, details, analysisHeading, findings, text, reportActions);
+			document.querySelector("#remote-scan-status").textContent = "Text preview and local text check ready. Not a malware verdict or remote sandbox result.";
+			container.scrollIntoView({ behavior: "smooth", block: "nearest" });
+		}
+
+		async function submitSafePreview(url) {
+			const button = document.querySelector("#preview-link-button");
+			const status = document.querySelector("#remote-scan-status");
+			const remoteResult = document.querySelector("#remote-result");
+			button.disabled = true;
+			remoteResult.replaceChildren();
+			remoteResult.hidden = false;
+			status.textContent = "Fetching text through this computer's Sentinel server. No cookies, scripts, or downloads are sent or run.";
+			remoteResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+			try {
+				const preview = await apiRequest("/api/preview", {
+					method: "POST",
+					body: JSON.stringify({ url, consent: true })
+				});
+				renderSafePreview(preview);
+			} catch (error) {
+				status.textContent = `Safe preview unavailable: ${error.message}`;
+				remoteResult.replaceChildren();
+				const message = document.createElement("div");
+				message.className = "remote-details";
+				message.textContent = "No page content was returned. The target was not opened in this browser.";
+				remoteResult.append(message);
+				remoteResult.hidden = false;
+			} finally {
+				updatePreviewButtonState();
+			}
+		}
+
+		async function submitRemoteScan(url) {
+			const button = document.querySelector("#remote-scan-button");
+			const status = document.querySelector("#remote-scan-status");
+			const remoteResult = document.querySelector("#remote-result");
+			button.disabled = true;
+			remoteResult.replaceChildren();
+			remoteResult.hidden = false;
+			status.textContent = "Submitting privately to urlscan.io. The provider will receive the full URL.";
+			try {
+				const submission = await apiRequest("/api/scans", {
+					method: "POST",
+					body: JSON.stringify({ url, consent: true })
+				});
+				status.textContent = `Remote scan queued for ${submission.submittedDomain}. Waiting for provider results...`;
+				const deadline = Date.now() + 90000;
+				await wait(10000);
+				while (Date.now() < deadline) {
+					const scan = await apiRequest(`/api/scans/${encodeURIComponent(submission.scanId)}`);
+					if (scan.status === "complete") {
+						renderRemoteResult(scan);
+						return;
+					}
+					status.textContent = "Remote scan still running. Checking again shortly...";
+					await wait(3000);
+				}
+				throw new Error("Remote scan timed out. No verdict was produced; try again later.");
+			} catch (error) {
+				status.textContent = `Remote scan unavailable: ${error.message}`;
+				remoteResult.replaceChildren();
+				const message = document.createElement("div");
+				message.className = "remote-details";
+				message.textContent = "No remote safety verdict is available. Keep the link unopened and treat it with caution.";
+				remoteResult.append(message);
+				remoteResult.hidden = false;
+			} finally {
+				button.disabled = !(apiOnline && urlscanConfigured);
+			}
+		}
+
+		const consentDialog = document.querySelector("#scan-consent");
+		let consentedUrl = "";
+		let consentedAction = "urlscan";
+		function showScanConsent(url, action) {
+			consentedUrl = url;
+			consentedAction = action;
+			document.querySelector("#consent-domain").textContent = url;
+			if (action === "preview") {
+				document.querySelector("#consent-title").textContent = "Preview page text safely?";
+				document.querySelector("#consent-copy").textContent = "The Sentinel server on this computer will request the page without browser cookies. It will fetch only HTML or plain text; it will not run scripts, frames, or downloads. The website can still see this computer/server's public network address.";
+				document.querySelector("#consent-warning").textContent = "This is a text-only fetch, not an isolated remote sandbox or malware verdict. Do not submit private URLs, password-reset links, or tokens.";
+				document.querySelector("#confirm-scan").textContent = "I understand, preview text";
+			} else {
+				document.querySelector("#consent-title").textContent = "Send this link for remote scanning?";
+				document.querySelector("#consent-copy").textContent = "The link will be opened by urlscan.io in its remote scanning environment, not on your device. Private visibility keeps the result out of public search, but the provider will still receive and process the full link.";
+				document.querySelector("#consent-warning").textContent = "Do not submit links containing password-reset codes, private document tokens, or other personal information.";
+				document.querySelector("#confirm-scan").textContent = "I consent, scan privately";
+			}
+			consentDialog.showModal();
+		}
+		document.querySelector("#remote-scan-button").addEventListener("click", () => {
+			const urls = messageInput.value.match(urlPattern) || [];
+			if (!urls.length) return;
+			showScanConsent(toScannableUrl(urls[0]), "urlscan");
+		});
+		document.querySelector("#preview-link-button").addEventListener("click", () => {
+			const urls = messageInput.value.match(urlPattern) || [];
+			if (!urls.length) return;
+			showScanConsent(toScannableUrl(urls[0]), "preview");
+		});
+		document.querySelector("#cancel-scan").addEventListener("click", () => {
+			consentedUrl = "";
+			consentedAction = "urlscan";
+			consentDialog.close();
+		});
+		document.querySelector("#confirm-scan").addEventListener("click", () => {
+			const url = consentedUrl;
+			const action = consentedAction;
+			consentedUrl = "";
+			consentedAction = "urlscan";
+			consentDialog.close();
+			if (url && action === "preview") submitSafePreview(url);
+			else if (url) submitRemoteScan(url);
+		});
+		document.querySelector("#message-input").addEventListener("paste", () => setTimeout(scheduleScan, 0));
+
+		let scanTimer;
+		function scheduleScan() {
+			clearTimeout(scanTimer);
+			const text = messageInput.value.trim();
+			const sender = document.querySelector("#sender-input").value.trim();
+			if (!text && !sender) return;
+			scanTimer = setTimeout(() => displayResult(text, sender), 350);
+		}
+
+		messageInput.addEventListener("input", () => {
+			document.querySelector("#char-count").textContent = `${messageInput.value.length.toLocaleString()} / 5,000`;
+			updatePreviewButtonState();
+			scheduleScan();
+		});
+		document.querySelector("#sender-input").addEventListener("input", scheduleScan);
+		scanButton.addEventListener("click", () => {
+			const text = messageInput.value.trim();
+			const sender = document.querySelector("#sender-input").value.trim();
+			if (!text && !sender) {
+				messageInput.focus();
+				messageInput.setCustomValidity("Paste a message or link, or enter a sender email or phone.");
+				messageInput.reportValidity();
+				messageInput.addEventListener("input", () => messageInput.setCustomValidity(""), { once: true });
+				return;
+			}
+			messageInput.setCustomValidity("");
+			displayResult(text, sender);
+		});
+		document.querySelector("#clear-button").addEventListener("click", () => {
+			clearTimeout(scanTimer);
+			messageInput.value = "";
+			document.querySelector("#sender-input").value = "";
+			messageInput.dispatchEvent(new Event("input"));
+			messageInput.setCustomValidity("");
+			result.className = "result";
+			latestReportData = null;
+			messageInput.focus();
+		});
+		document.querySelectorAll("[data-sample]").forEach(button => button.addEventListener("click", () => {
+			const samples = {
+				urgent: "FINAL WARNING: Your bank account is suspended. Verify your password and one-time code immediately at http://secure-login.example.com.verify-now.xyz/account",
+				attachment: "Please review the attached invoice.exe and enable the document macros to view your payment details.",
+				ordinary: "Hi, are we still meeting at the library tomorrow at 10? Let me know if you need to reschedule."
+			};
+			messageInput.value = samples[button.dataset.sample];
+			messageInput.dispatchEvent(new Event("input"));
+			messageInput.focus();
+			result.className = "result";
+		}));
+
+		const contactForm = document.querySelector("#contact-form");
+		const savedContactsElement = document.querySelector("#saved-contacts");
+		let savedContacts = [];
+		let savedReports = [];
+
+		function normalizedContactValue(type, value) {
+			return type === "email" ? value.trim().toLowerCase() : value.replace(/\D/g, "");
+		}
+
+		function isPlaceholderContact(contact) {
+			const emailDomain = contact.type === "email" ? contact.value.split("@").pop().toLowerCase() : "";
+			let sourceHost = "";
+			try { sourceHost = new URL(contact.source).hostname.toLowerCase(); } catch {}
+			return [emailDomain, sourceHost].some(host => /\.(?:example|test|invalid|localhost)$/.test(host));
+		}
+
+		function renderReports() {
+			const container = document.querySelector("#saved-reports");
+			container.replaceChildren();
+			document.querySelector("#reports-count").textContent = `${savedReports.length} SAVED`;
+			const weekStart = Date.now() - 7 * 24 * 60 * 60 * 1000;
+			const recentReports = savedReports.filter(report => Date.parse(report.createdAt) >= weekStart);
+			document.querySelector("#trend-total").textContent = String(recentReports.length);
+			document.querySelector("#trend-danger").textContent = String(recentReports.filter(report => report.risk === "danger").length);
+			document.querySelector("#trend-warning").textContent = String(recentReports.filter(report => report.risk === "warning").length);
+			document.querySelector("#trend-clear").textContent = String(recentReports.filter(report => report.risk === "clear").length);
+			const patternCounts = new Map();
+			for (const report of recentReports) {
+				for (const finding of report.findings) {
+					const pattern = finding.split(".")[0].replace(/^(?:HIGH RISK|REVIEW) \/ /, "");
+					if (pattern) patternCounts.set(pattern, (patternCounts.get(pattern) || 0) + 1);
+				}
+			}
+			const topPattern = [...patternCounts.entries()].sort((left, right) => right[1] - left[1])[0];
+			document.querySelector("#trend-patterns").textContent = topPattern
+				? `Most frequent local finding this week: ${topPattern[0]} (${topPattern[1]} saved report${topPattern[1] === 1 ? "" : "s"}). These are your saved reports only, not community-wide attack statistics.`
+				: "No saved finding pattern this week. Counts include only reports saved on this Sentinel server.";
+			if (!savedReports.length) {
+				const empty = document.createElement("div");
+				empty.className = "empty-contacts";
+				empty.textContent = "No local threat reports yet. Analyze a message, then choose Save threat report locally.";
+				container.append(empty);
+				return;
+			}
+			for (const report of savedReports) {
+				const card = document.createElement("article");
+				card.className = "report-card";
+				const body = document.createElement("div");
+				const title = document.createElement("div");
+				title.className = "report-card-title";
+				title.textContent = `${report.risk === "danger" ? "HIGH RISK" : report.risk === "warning" ? "REVIEW" : "NO FLAGS*"} / ${report.hosts.length ? report.hosts.join(", ") : "No link hostname"}`;
+				const date = document.createElement("div");
+				date.className = "report-card-meta";
+				date.textContent = new Date(report.createdAt).toLocaleString();
+				const reasons = document.createElement("div");
+				reasons.className = "report-card-signals";
+				if (report.findings.length) {
+					for (const finding of report.findings) {
+						const item = document.createElement("li");
+						item.textContent = finding;
+						reasons.append(item);
+					}
+				} else {
+					reasons.textContent = "No warning signals recorded.";
+				}
+				body.append(title, date, reasons);
+				const remove = document.createElement("button");
+				remove.className = "contact-remove";
+				remove.type = "button";
+				remove.setAttribute("aria-label", "Delete local threat report");
+				remove.textContent = "×";
+				remove.addEventListener("click", async () => {
+					try {
+						await apiRequest(`/api/reports/${report.id}`, { method: "DELETE" });
+						await loadReports();
+					} catch (error) {
+						document.querySelector("#report-status").textContent = error.message;
+					}
+				});
+				card.append(body, remove);
+				container.append(card);
+			}
+		}
+
+		document.querySelector("#report-button").addEventListener("click", async () => {
+			const sender = document.querySelector("#sender-input").value.trim();
+			if (!sender) {
+				document.querySelector("#report-status").textContent = "Enter the sender's email or phone number before reporting.";
+				document.querySelector("#sender-input").focus();
+				return;
+			}
+			if (latestReportData) latestReportData.sender = sender;
+			const reportTarget = getReportSenderChannel(sender);
+			const button = document.querySelector("#report-button");
+			button.disabled = true;
+			try {
+				if (reportTarget) {
+					document.querySelector("#report-status").textContent = reportTarget.type === "email"
+						? "Opening the sender's official report email..."
+						: "Opening the sender's official report phone number...";
+					openContactTarget({ type: reportTarget.type, value: reportTarget.value });
+				}
+				await apiRequest("/api/reports", { method: "POST", body: JSON.stringify({ ...latestReportData, sender, createdAt: latestReportData?.createdAt || new Date().toISOString() }) });
+				await loadReports();
+				document.querySelector("#report-status").textContent = reportTarget
+					? `${reportTarget.type === "email" ? "Report email opened and saved locally." : "Report phone opened and saved locally."}`
+					: "Saved to this Sentinel server. Not sent to a public threat database.";
+			} catch (error) {
+				document.querySelector("#report-status").textContent = `Report not saved: ${error.message}`;
+			} finally {
+				button.disabled = false;
+			}
+		});
+
+		document.querySelector("#share-alert-button").addEventListener("click", async () => {
+			if (!latestReportData) return;
+			const summary = [
+				`Sentinel ${latestReportData.risk.toUpperCase()} alert`,
+				latestReportData.hosts.length ? `Hosts: ${latestReportData.hosts.join(", ")}` : "No host detected",
+				...latestReportData.findings,
+				"Pattern-based assessment; not proof of malicious activity. Verify through an official channel."
+			].join("\n");
+			try {
+				if (navigator.share) await navigator.share({ title: "Sentinel threat alert", text: summary });
+				else if (navigator.clipboard) await navigator.clipboard.writeText(summary);
+				else throw new Error("Sharing is not available in this browser.");
+				document.querySelector("#report-status").textContent = navigator.share ? "Alert shared. The original message and sender were not included." : "Alert copied. The original message and sender were not included.";
+			} catch (error) {
+				if (error.name !== "AbortError") document.querySelector("#report-status").textContent = error.message;
+			}
+		});
+
+		function openContactTarget(contact) {
+			const href = contact.type === "email" ? `mailto:${contact.value}` : `tel:${contact.value.replace(/[^\d+]/g, "")}`;
+			const fallbackMessage = contact.type === "email"
+				? `The email app is not installed or has not been set as the default mail app on this device. Copy this email manually: ${contact.value}`
+				: `The calling app is not installed or has not been set as the default dialer on this device. Copy this number manually: ${contact.value}`;
+			try {
+				const anchor = document.createElement("a");
+				anchor.href = href;
+				anchor.style.display = "none";
+				document.body.appendChild(anchor);
+				anchor.click();
+				anchor.remove();
+			} catch (error) {
+				document.querySelector(".contact-footnote").textContent = fallbackMessage;
+			}
+		}
+		function getReportSenderChannel(senderValue) {
+			const value = String(senderValue || "").trim();
+			if (!value) return null;
+			const outcome = lookupSavedSender(value);
+			if (outcome.matches?.length) {
+				const match = outcome.matches.find(contact => contact.type === "email" || contact.type === "phone") || outcome.matches[0];
+				return { type: match.type, value: match.value, organization: match.organization };
+			}
+			const identity = parseSenderIdentity(value);
+			if (identity.email) return { type: "email", value: identity.email };
+			if (/^\+?[\d\s().-]{7,}$/.test(value)) return { type: "phone", value: value.replace(/[^\d+]/g, "") };
+			return null;
+		}
+		function openReportSenderChannel(senderValue) {
+			const target = getReportSenderChannel(senderValue);
+			if (!target) {
+				document.querySelector("#report-status").textContent = "Enter the sender's email or phone number before reporting.";
+				return false;
+			}
+			document.querySelector("#report-status").textContent = target.type === "email"
+				? "Opening the sender's official report email..."
+				: "Opening the sender's official report phone number...";
+			openContactTarget({ type: target.type, value: target.value });
+			return true;
+		}
+		function renderContacts() {
+			document.querySelector("#contacts-count").textContent = `${savedContacts.length} SAVED`;
+			savedContactsElement.replaceChildren();
+			if (!savedContacts.length) {
+				const empty = document.createElement("div");
+				empty.className = "empty-contacts";
+				empty.textContent = "No contacts saved yet. Add details from an organization's official website, app, or statement.";
+				savedContactsElement.append(empty);
+				return;
+			}
+			for (const contact of savedContacts) {
+				const row = document.createElement("article");
+				row.className = "saved-contact";
+				const main = document.createElement("div");
+				main.className = "saved-contact-main";
+				const title = document.createElement("div");
+				title.className = "saved-contact-title";
+				title.textContent = contact.organization;
+				const placeholder = isPlaceholderContact(contact);
+				const detail = document.createElement(placeholder ? "span" : "button");
+				detail.className = "saved-contact-detail";
+				detail.type = "button";
+				detail.textContent = contact.value;
+				if (!placeholder) {
+					detail.addEventListener("click", () => openContactTarget(contact));
+					detail.setAttribute("aria-label", contact.type === "email" ? `Open email app for ${contact.value}` : `Open phone app for ${contact.value}`);
+				}
+				const meta = document.createElement("div");
+				meta.className = "saved-contact-meta";
+				const badge = document.createElement("span");
+				badge.className = placeholder ? "contact-badge contact-badge-placeholder" : "contact-badge";
+				badge.textContent = placeholder ? "PLACEHOLDER / NOT A REAL CONTACT" : `${contact.type === "email" ? "EMAIL ADDRESS" : "PHONE NUMBER"} / USER-SAVED`;
+				const source = document.createElement(placeholder ? "span" : "a");
+				source.className = "contact-source";
+				if (placeholder) {
+					source.textContent = "Reserved test domain; not an official source";
+				} else {
+					source.href = contact.source;
+					source.target = "_blank";
+					source.rel = "noopener noreferrer";
+					source.referrerPolicy = "no-referrer";
+					source.textContent = "Source URL (check independently) ↗";
+				}
+				meta.append(badge, source);
+				main.append(title, detail, meta);
+				const actions = document.createElement("div");
+				actions.className = "contact-actions";
+				const edit = document.createElement("button");
+				edit.className = "contact-edit";
+				edit.type = "button";
+				edit.textContent = "Edit";
+				edit.addEventListener("click", () => {
+					document.querySelector("#contact-org").value = contact.organization;
+					document.querySelector("#contact-type").value = contact.type;
+					document.querySelector("#contact-value").value = contact.value;
+					document.querySelector("#contact-source").value = contact.source;
+					document.querySelector("#contact-org").scrollIntoView({ behavior: "smooth", block: "center" });
+					document.querySelector("#contact-org").focus();
+				});
+				const remove = document.createElement("button");
+				remove.className = "contact-remove";
+				remove.type = "button";
+				remove.setAttribute("aria-label", `Remove ${contact.organization}`);
+				remove.textContent = "×";
+				remove.addEventListener("click", async () => {
+					try {
+						await apiRequest(`/api/contacts/${contact.id}`, { method: "DELETE" });
+						await loadContacts();
+					} catch (error) {
+						document.querySelector(".contact-footnote").textContent = `Could not remove contact: ${error.message}`;
+					}
+				});
+				actions.append(edit, remove);
+				row.append(main, actions);
+				savedContactsElement.append(row);
+			}
+		}
+
+		function renderDirectory() {
+			const list = document.querySelector("#directory-list");
+			const query = document.querySelector("#directory-search").value.trim().toLowerCase();
+			const category = document.querySelector("#directory-category").value;
+			const entries = officialDirectory.filter(entry => {
+				const searchable = [entry.organization, entry.category, entry.note, ...entry.domains, ...entry.emails.map(channel => channel.value), ...entry.phones.map(channel => channel.value)].join(" ").toLowerCase();
+				return (category === "all" || entry.category === category) && (!query || searchable.includes(query));
+			});
+			list.replaceChildren();
+			document.querySelector("#directory-count").textContent = `${entries.length} / ${officialDirectory.length} ENTRIES`;
+			if (!entries.length) {
+				const empty = document.createElement("div");
+				empty.className = "empty-contacts";
+				empty.textContent = "No matching official entry.";
+				list.append(empty);
+				return;
+			}
+			for (const entry of entries) {
+				const card = document.createElement("article");
+				card.className = "directory-card";
+				const body = document.createElement("div");
+				const name = document.createElement("div");
+				name.className = "directory-name";
+				name.textContent = entry.organization;
+				const meta = document.createElement("div");
+				meta.className = "directory-meta";
+				meta.textContent = `${entry.category.toUpperCase()} / SOURCE CHECKED 2026-10-07`;
+				const channels = document.createElement("div");
+				channels.className = "directory-channels";
+				const appendChannel = (label, value, href, purpose) => {
+					const row = document.createElement("div");
+					row.className = "directory-channel";
+					const title = document.createElement("strong");
+					title.textContent = label;
+					const link = document.createElement("a");
+					link.href = href;
+					link.textContent = value;
+					link.setAttribute("aria-label", `${label}: ${value}${purpose ? `, ${purpose}` : ""}`);
+					const note = document.createElement("span");
+					note.textContent = purpose || "";
+					row.append(title, link);
+					if (purpose) row.append(note);
+					channels.append(row);
+				};
+				for (const email of entry.emails) appendChannel("EMAIL", email.value, `mailto:${email.value}`, email.purpose);
+				for (const phone of entry.phones) appendChannel("PHONE", phone.value, `tel:${phone.value.replace(/[^\d+*#,;]/g, "")}`, phone.purpose);
+				if (entry.portal) appendChannel("PORTAL", "Open official help/contact portal ↗", entry.portal, "Use this source for current service options.");
+				if (!entry.emails.length && !entry.phones.length && !entry.portal) {
+					const unavailable = document.createElement("div");
+					unavailable.className = "directory-channel";
+					unavailable.textContent = "No direct public email or phone was listed on the source checked.";
+					channels.append(unavailable);
+				}
+				const note = document.createElement("div");
+				note.className = "directory-note";
+				note.textContent = entry.note;
+				body.append(name, meta, channels, note);
+				const source = document.createElement("a");
+				source.className = "directory-source";
+				source.href = entry.source;
+				source.target = "_blank";
+				source.rel = "noopener noreferrer";
+				source.referrerPolicy = "no-referrer";
+				source.textContent = "Official source ↗";
+				card.append(body, source);
+				list.append(card);
+			}
+		}
+
+		document.querySelector("#contact-value").addEventListener("input", event => event.target.setCustomValidity(""));
+		document.querySelector("#contact-source").addEventListener("input", event => event.target.setCustomValidity(""));
+		document.querySelector("#directory-search").addEventListener("input", renderDirectory);
+		document.querySelector("#directory-category").addEventListener("change", renderDirectory);
+		document.querySelectorAll("[data-view]").forEach(button => button.addEventListener("click", () => {
+			const selectedView = button.dataset.view;
+			document.querySelectorAll(".app-view").forEach(view => {
+				view.hidden = view.id !== `${selectedView}-view`;
+			});
+			document.querySelectorAll("[data-view]").forEach(navButton => {
+				if (navButton === button) navButton.setAttribute("aria-current", "page");
+				else navButton.removeAttribute("aria-current");
+			});
+			if (selectedView === "directory") renderDirectory();
+			if (selectedView === "directory") renderDirectory();
+			if (apiOnline && selectedView === "contacts") loadContacts().catch(error => {
+				document.querySelector(".contact-footnote").textContent = `Could not load contacts: ${error.message}`;
+			});
+			if (apiOnline && selectedView === "reports") loadReports().catch(error => {
+				document.querySelector("#report-status").textContent = `Could not load reports: ${error.message}`;
+			});
+		}));
+		renderContacts();
+		renderDirectory();
+		renderReports();
+		initializeApi();
+	-->
+</body>
+</html>

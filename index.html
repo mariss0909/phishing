@@ -366,7 +366,7 @@
 						<p class="result-summary" id="result-summary"></p>
 						<ul class="signals" id="signals"></ul>
 						<div class="sender-result" id="sender-result"></div>
-						<div class="report-actions"><button class="secondary" id="report-button" type="button" hidden>Save threat report locally</button><span class="report-status" id="report-status" aria-live="polite">Reports are stored in this app only.</span></div>
+						<div class="report-actions"><button class="secondary" id="report-button" type="button" hidden>Save analysis to history</button><span class="report-status" id="report-status" aria-live="polite">Reports are saved only when you choose to save them.</span></div>
 						<div class="remote-scan"><div class="remote-scan-head"><div><div class="remote-scan-title">Link preview &amp; text scan</div><div class="remote-scan-status" id="remote-scan-status">Checking server...</div></div><div class="remote-scan-actions"><button class="secondary" id="preview-link-button" type="button" disabled>Preview &amp; scan link</button><button class="secondary" id="visual-preview-button" type="button" disabled>Visual sandbox screenshot</button></div></div><div class="remote-result" id="remote-result" hidden></div></div>
 					</section>
 				</section>
@@ -375,7 +375,7 @@
 			</section>
 			<section class="app-view" id="contacts-view" hidden><div class="panel contacts-panel"><div class="contacts-heading"><div><h2>Trusted contacts</h2><p>Personal contacts are saved below. The official channels list includes verified support portals for major apps and services.</p></div><span class="contacts-count" id="contacts-count">0 SAVED</span></div><form class="contact-form" id="contact-form"><div class="form-field"><label for="contact-org">ORGANIZATION</label><input id="contact-org" name="organization" maxlength="80" required></div><div class="form-field"><label for="contact-type">TYPE</label><select id="contact-type" name="type"><option value="email">Email</option><option value="phone">Phone</option></select></div><div class="form-field"><label for="contact-value">EMAIL OR NUMBER</label><input id="contact-value" name="value" maxlength="1200" placeholder="Add one or more values separated by commas, semicolons, or new lines" required></div><div class="form-field"><label for="contact-source">OFFICIAL SOURCE URL</label><input id="contact-source" name="source" type="url" required></div><div class="form-field"><label for="contact-main-domain">MAIN DOMAIN</label><input id="contact-main-domain" name="main_domain" placeholder="bank.com or bank.com.ph" required></div><div class="form-actions"><button class="primary" type="submit">Save contact</button></div></form><p class="contact-footnote">Use sources published by the organization. You can save several emails or phone numbers for the same organization.</p><div class="saved-contacts" id="saved-contacts"></div><div class="official-contacts-heading"><h3>Official channels</h3><span class="contacts-count" id="official-contacts-count">0 CHANNELS</span></div><p class="contact-footnote">SMS sender names and short codes vary by country and carrier and can be spoofed. Verify messages in the official app or portal; a displayed sender name is never proof.</p><div class="directory-list" id="official-trusted-contacts"></div></div></section>
 			<section class="app-view" id="directory-view" hidden><div class="panel contacts-panel"><div class="contacts-heading"><div><h2>Official contact directory</h2><p>Verified official channels for Philippine services, major apps, messaging platforms, and news sites. Confirm details at the official source.</p></div><span class="contacts-count" id="directory-count">0 ENTRIES</span></div><div class="privacy-note" style="margin-top:15px"><span>◆</span><span><strong>Selected entries, not exhaustive.</strong> Use official branch locators and current contact pages; a sender match is not authentication.</span></div><div class="directory-toolbar"><input id="directory-search" type="search" placeholder="Search organization, email, number, or portal" aria-label="Search official directory"><select id="directory-category" aria-label="Filter category"><option value="all">All categories</option><option value="Bank">Banks</option><option value="E-wallet">E-wallets</option><option value="Government">Government</option><option value="Health">Health</option><option value="Utility">Utilities</option><option value="Digital platforms">Social, messaging, shopping &amp; apps</option><option value="News &amp; media">News &amp; media</option><option value="saved">Saved contacts</option></select><span class="micro-label">OFFICIAL SOURCES</span></div><div class="directory-list" id="directory-list" aria-live="polite"></div></div></section>
-			<section class="app-view" id="reports-view" hidden><div class="panel reports-panel"><div class="contacts-heading"><div><h2>Threat reports</h2><p>Analysis findings and link hostnames are stored in your Firestore account. They are not sent to authorities.</p></div><span class="contacts-count" id="reports-count">0 SAVED</span></div><div class="saved-contacts" id="saved-reports"></div></div></section>
+			<section class="app-view" id="reports-view" hidden><div class="panel reports-panel"><div class="contacts-heading"><div><h2>Threat reports</h2><p>Saved reports include the sender, analysis findings, link hostnames, and time. The full message is not stored or sent to authorities.</p></div><span class="contacts-count" id="reports-count">0 SAVED</span></div><div class="saved-contacts" id="saved-reports"></div></div></section>
 			<section class="app-view" id="guide-view" hidden><div class="panel guide-panel"><div class="contacts-heading"><div><h2>How to use the phishing detector</h2><p>Follow these quick steps to review a suspicious message, verify the sender, and decide whether it is safe or dangerous.</p></div><span class="micro-label">QUICK USER GUIDE</span></div><div class="guide-section"><h3>Step-by-step</h3><ol class="guide-list"><li><strong>1. Paste the message</strong><span>Copy the full text exactly as received. The detector checks urgency, login requests, password mentions, payment lures, and suspicious domains.</span></li><li><strong>2. Enter the sender</strong><span>Type the sender email or phone number in the sender field. The system compares it with your saved trusted contacts and official channels.</span></li><li><strong>3. Review the sender verdict first</strong><span>The app prioritizes the sender and official family domain. If the sender matches the real organization, it stays safe or green even if the message wording is extra urgent.</span></li><li><strong>4. Check the links</strong><span>Use the preview option only when needed. It shows readable content from the URL without opening the full page in a browser.</span></li><li><strong>5. Verify through official contact channels</strong><span>Open official apps, websites, or phone numbers you already know. Do not trust links or contact details inside the suspicious message.</span></li><li><strong>6. Save trusted contacts</strong><span>Store bank, business, and support contacts with their official source URL so future checks are faster and more accurate.</span></li></ol></div><div class="guide-section"><h3>Features and functions</h3><ol class="guide-list"><li><strong>Sender verification</strong><span>Checks whether the sender or domain matches trusted contacts, saved contacts, or an official company family domain.</span></li><li><strong>Message analysis</strong><span>Flags pressure tactics, login prompts, password requests, payment pressure, and other suspicious message patterns.</span></li><li><strong>Link preview</strong><span>Shows the linked page text and checks the host without exposing the user to a full interactive browsing session.</span></li><li><strong>Threat reports</strong><span>Stores analyzed reports locally with risk level, sender, findings, and host information so users can review past checks.</span></li><li><strong>Official contact directory</strong><span>Lists verified support channels from banks, government services, apps, utilities, and media organizations.</span></li><li><strong>Saved trusted contacts</strong><span>Lets the user keep multiple emails and phone numbers for the same organization and edit or remove them anytime.</span></li></ol></div></div></section>
 			<footer class="footer"><span>PHISHING DETECTOR / MESSAGE SECURITY</span><span>Never share credentials or one-time codes.</span></footer>
 		</main></div>
@@ -678,7 +678,7 @@
 		async function loadContacts(){contacts=(await apiRequest("/api/contacts")).contacts;renderContacts();renderOfficialTrustedContacts();renderDirectory();renderSenderMatch();}async function loadReports(){reports=(await apiRequest("/api/reports")).reports;renderReports();}
 		function firestoreSetupMessage(error){if(error.code==="auth/configuration-not-found")return"Set up Firebase Authentication in the Firebase Console, enable Anonymous sign-in, create a Firestore database, publish firestore.rules, then reload.";if(error.code==="auth/admin-restricted-operation")return"Enable Anonymous sign-in in Firebase Authentication, then reload to copy saved contacts and the directory into Firestore.";if(error.code==="permission-denied")return"Firestore denied access. Deploy firestore.rules, then reload.";if(error.code==="auth/unauthorized-domain")return"Add this app's host under Firebase Authentication > Settings > Authorized domains.";return`Could not connect to Firestore: ${error.message}`;}
 		async function initializeApi(){try{await window.firebaseStoreLoaded;await window.firebaseStoreReady;document.querySelector("#server-status").replaceChildren(el("span","status-dot",""),document.createTextNode(" FIRESTORE READY"));try{const health=await apiRequest("/api/health");apiOnline=health.status==="ok";urlscanConfigured=Boolean(health.urlscanConfigured);}catch{apiOnline=false;urlscanConfigured=false;}document.querySelector("#remote-scan-status").textContent=apiOnline?(urlscanConfigured?"Text preview and visual sandbox are available after consent.":"Text preview is available after consent. Visual screenshots need URLSCAN_API_KEY on the server."):"Remote link preview is unavailable; local message analysis and Firestore saving are ready.";const directoryData=await apiRequest("/api/directory");if(directoryData.entries.length){officialDirectory.splice(0,officialDirectory.length,...directoryData.entries);}else{await apiRequest("/api/directory",{method:"PUT",body:JSON.stringify({entries:officialDirectory})});}await Promise.all([loadContacts(),loadReports()]);}catch(error){apiOnline=false;urlscanConfigured=false;document.querySelector("#server-status").textContent="FIRESTORE SETUP REQUIRED";document.querySelector(".contact-footnote").textContent=firestoreSetupMessage(error);}updatePreviewButton();}
-		function updateReportButtonState(){const button=document.querySelector("#report-button");if(!button)return;button.hidden=!latestReport||latestReport.risk!=="danger";button.disabled=false;button.textContent="Save threat report locally";}
+		function updateReportButtonState(){const button=document.querySelector("#report-button");if(!button)return;button.hidden=!latestReport;button.disabled=false;button.textContent="Save analysis to history";document.querySelector("#report-status").textContent=latestReport?"Manual save stores the sender, findings, and link domains. The full message is not saved.":"Reports are saved only when you choose to save them.";}
 		function scanMessage(){const value=messageInput.value.trim(),findings=[];if(/password|otp|one.time code|pin|cvv/i.test(value))findings.push("The message mentions an OTP, password, PIN, or CVV. Never share these details.");if(/urgent|immediately|act now|account.{0,20}(locked|suspended)/i.test(value))findings.push("Urgent wording can pressure you to act before verifying independently.");if(/bit\.ly|tinyurl|t\.co/i.test(value))findings.push("A shortened link hides its destination.");if(/\.(exe|scr|bat|cmd|msi|js|vbs|ps1)(?:\b|$)/i.test(value))findings.push("The message refers to an executable or script attachment.");result.className=`result visible ${findings.length?"verdict-warning":"verdict-clear"}`;document.querySelector("#result-title").textContent=findings.length?"Review this message":"No common warning patterns found";document.querySelector("#result-icon").textContent=findings.length?"!":"✓";document.querySelector("#risk-label").textContent=findings.length?"REVIEW":"NO FLAGS*";document.querySelector("#result-score").textContent=`${findings.length} warning signal${findings.length===1?"":"s"}`;document.querySelector("#analysis-time").textContent=`Analyzed ${new Date().toLocaleString()}`;document.querySelector("#result-summary").textContent="Pattern checks are not proof of fraud or safety. Verify unexpected requests through an official channel.";const signals=document.querySelector("#signals");signals.replaceChildren();for(const finding of findings.length?findings:["No matching warning patterns found."])signals.append(el("li","",finding));const urls=value.match(urlPattern)||[];urlPattern.lastIndex=0;latestReport={risk:findings.length?"warning":"clear",findings,hosts:urls.map(raw=>{try{return new URL(/^https?:/i.test(raw)?raw:`https://${raw}`).hostname;}catch{return "";}}).filter(Boolean)};document.querySelector("#remote-result").hidden=true;document.querySelector("#remote-scan-status").textContent=urls.length?"Text preview is ready after consent. The page is fetched by this server.":"Paste a link to enable text preview.";updatePreviewButton();}
 		function inspectSender(sender, messageText=""){
 			const email=sender.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]||"";
@@ -868,25 +868,46 @@
 			}
 		});
 		const renderOfficialDirectory = renderDirectory;
+		const savedDirectorySection=document.createElement("section");
+		savedDirectorySection.className="saved-directory-section";
+		const savedDirectoryHeading=document.createElement("div");
+		savedDirectoryHeading.className="official-contacts-heading";
+		savedDirectoryHeading.append(el("h3","","Saved contacts"));
+		const savedDirectoryCount=el("span","contacts-count","0 SAVED");
+		savedDirectoryCount.id="saved-directory-count";
+		savedDirectoryHeading.append(savedDirectoryCount);
+		const savedDirectoryList=el("div","directory-list");
+		savedDirectoryList.id="saved-directory-list";
+		savedDirectorySection.append(savedDirectoryHeading,savedDirectoryList);
+		document.querySelector("#directory-list").after(savedDirectorySection);
 		renderDirectory = function(){
 			renderOfficialDirectory();
 			const query=document.querySelector("#directory-search").value.trim().toLowerCase();
 			const category=document.querySelector("#directory-category").value;
-			const list=document.querySelector("#directory-list");
-			if(category==="all"||category==="saved")for(const contact of contacts){
-				const mainDomain=normalizeDomain(contact.main_domain||contact.source);
-				if(!`${contact.organization} ${contact.type} ${contact.value} ${contact.source} ${mainDomain}`.toLowerCase().includes(query))continue;
-				const card=el("article","directory-card"),body=document.createElement("div");
-				body.append(el("div","directory-name",contact.organization),el("div","directory-meta","SAVED CONTACT / USER-ADDED"),el("div","directory-meta",`MAIN DOMAIN / ${mainDomain || "not set"}`));
-				const channels=el("div","directory-channels"),row=el("div","directory-channel");
-				const label=el("strong","",contact.type.toUpperCase()),value=el("a","",contact.value);
-				value.href=contact.type==="email"?`mailto:${contact.value}`:`tel:${contact.value}`;
-				row.append(label,value);channels.append(row);body.append(channels);
-				const source=el("a","directory-source","Saved source ↗");
-				source.href=contact.source;source.target="_blank";source.rel="noopener noreferrer";
-				card.append(body,source);list.append(card);
+			const officialList=document.querySelector("#directory-list"),groups=new Map();
+			for(const contact of contacts){
+				const mainDomain=normalizeDomain(contact.main_domain||contact.source||"");
+				const key=`${contact.organization.toLowerCase()}::${mainDomain}`;
+				if(!groups.has(key))groups.set(key,{organization:contact.organization,mainDomain,source:contact.source||"",emails:[],phones:[]});
+				const group=groups.get(key),channels=contact.type==="email"?group.emails:group.phones;
+				if(!channels.includes(contact.value))channels.push(contact.value);
 			}
-			document.querySelector("#directory-count").textContent=`${list.children.length} / ${officialDirectory.length+contacts.length} ENTRIES`;
+			const entries=[...groups.values()].filter(entry=>`${entry.organization} ${entry.mainDomain} ${entry.source} ${entry.emails.join(" ")} ${entry.phones.join(" ")}`.toLowerCase().includes(query));
+			savedDirectoryList.replaceChildren();
+			savedDirectoryCount.textContent=`${entries.length} SAVED`;
+			officialList.hidden=category==="saved";
+			if(category==="saved")document.querySelector("#directory-count").textContent=`${entries.length} SAVED CONTACTS`;
+			if(!entries.length)savedDirectoryList.append(el("div","empty-contacts","No saved contacts yet. Add one in Trusted contacts."));
+			for(const entry of entries){
+				const card=el("article","directory-card"),body=document.createElement("div");
+				body.append(el("div","directory-name",entry.organization),el("div","directory-meta","SAVED CONTACT / USER-ADDED"),el("div","directory-meta",`MAIN DOMAIN / ${entry.mainDomain||"not set"}`));
+				const channels=el("div","directory-channels");
+				for(const email of entry.emails){const row=el("div","directory-channel");row.append(el("strong","","EMAIL"),el("a","",email));row.lastElementChild.href=`mailto:${email}`;channels.append(row);}
+				for(const phone of entry.phones){const row=el("div","directory-channel");row.append(el("strong","","PHONE"),el("a","",phone));row.lastElementChild.href=`tel:${phone}`;channels.append(row);}
+				body.append(channels,el("div","directory-note","User-saved contact. Verify it through the source before relying on it."));
+				const source=el("a","directory-source","Saved source ↗");source.href=entry.source;source.target="_blank";source.rel="noopener noreferrer";card.append(body,source);
+				savedDirectoryList.append(card);
+			}
 		};
 		function renderSenderMatch(){
 			const value=document.querySelector("#sender-input").value.trim();
@@ -1016,6 +1037,53 @@
 			}
 			return true;
 		}
+		function renderReports(){
+			const list=document.querySelector("#saved-reports");
+			list.replaceChildren();
+			document.querySelector("#reports-count").textContent=`${reports.length} SAVED`;
+			if(!reports.length){list.append(el("div","empty-contacts","No reports saved yet. Analyze a message, then choose Save analysis to history."));return;}
+			for(const report of reports){
+				const card=el("article","report-card"),body=document.createElement("div");
+				body.append(el("div","report-card-title",`${report.risk.toUpperCase()} / ${report.hosts.join(", ")||"No link hostname"}`));
+				body.append(el("div","report-card-meta",new Date(report.createdAt).toLocaleString()));
+				body.append(el("div","report-card-meta",`Sender: ${report.sender||"Not provided"}`));
+				const details=el("ul","report-card-signals");
+				for(const finding of report.findings||[])details.append(el("li","",finding));
+				if(!report.findings?.length)details.append(el("li","","No warning signals recorded."));
+				body.append(details);
+				const remove=el("button","contact-remove","×");
+				remove.type="button";
+				remove.setAttribute("aria-label","Delete threat report");
+				remove.addEventListener("click",async()=>{
+					try{
+						await apiRequest(`/api/reports/${report.id}`,{method:"DELETE"});
+						await loadReports();
+					}catch(error){
+						document.querySelector("#report-status").textContent=`Report not deleted: ${error.message}`;
+					}
+				});
+				card.append(body,remove);
+				list.append(card);
+			}
+		}
+		document.querySelector("#report-button").addEventListener("click",async event=>{
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			if(!latestReport)return;
+			const button=document.querySelector("#report-button"),status=document.querySelector("#report-status");
+			const report={...latestReport,sender:document.querySelector("#sender-input").value.trim(),createdAt:new Date().toISOString()};
+			button.disabled=true;
+			status.textContent="Saving analysis to Firestore...";
+			try{
+				await apiRequest("/api/reports",{method:"POST",body:JSON.stringify(report)});
+				await loadReports();
+				status.textContent="Analysis saved to history. The full message was not stored.";
+				button.textContent="Saved to history";
+			}catch(error){
+				status.textContent=`Report not saved: ${error.message}`;
+				button.disabled=false;
+			}
+		},true);
 	</script>
 	<!--
 			dot.className = "status-dot";
@@ -1433,9 +1501,14 @@
 				risk: outcome.level,
 				findings: outcome.findings.map(formatFinding),
 				hosts: outcome.hosts,
+				sender,
 				createdAt: new Date().toISOString()
 			};
-			document.querySelector("#report-status").textContent = "Local only. Saving stores signals and hostnames, not the message or sender.";
+			latestReport = null;
+			document.querySelector("#report-button").hidden = false;
+			document.querySelector("#report-button").disabled = false;
+			document.querySelector("#report-button").textContent = "Save analysis to history";
+			document.querySelector("#report-status").textContent = "Manual save stores the sender, findings, and link domains. The full message is not saved.";
 			const urls = text.match(urlPattern) || [];
 			const remoteButton = document.querySelector("#remote-scan-button");
 			remoteButton.disabled = !apiOnline || !urlscanConfigured || !urls.length;
@@ -1810,7 +1883,7 @@
 			if (!savedReports.length) {
 				const empty = document.createElement("div");
 				empty.className = "empty-contacts";
-				empty.textContent = "No local threat reports yet. Analyze a message, then choose Save threat report locally.";
+				empty.textContent = "No reports saved yet. Analyze a message, then choose Save analysis to history.";
 				container.append(empty);
 				return;
 			}
@@ -1824,6 +1897,9 @@
 				const date = document.createElement("div");
 				date.className = "report-card-meta";
 				date.textContent = new Date(report.createdAt).toLocaleString();
+				const sender = document.createElement("div");
+				sender.className = "report-card-meta";
+				sender.textContent = `Sender: ${report.sender || "Not provided"}`;
 				const reasons = document.createElement("div");
 				reasons.className = "report-card-signals";
 				if (report.findings.length) {
@@ -1835,7 +1911,7 @@
 				} else {
 					reasons.textContent = "No warning signals recorded.";
 				}
-				body.append(title, date, reasons);
+				body.append(title, date, sender, reasons);
 				const remove = document.createElement("button");
 				remove.className = "contact-remove";
 				remove.type = "button";
@@ -1855,31 +1931,23 @@
 		}
 
 		document.querySelector("#report-button").addEventListener("click", async () => {
-			const sender = document.querySelector("#sender-input").value.trim();
-			if (!sender) {
-				document.querySelector("#report-status").textContent = "Enter the sender's email or phone number before reporting.";
-				document.querySelector("#sender-input").focus();
-				return;
-			}
-			if (latestReportData) latestReportData.sender = sender;
-			const reportTarget = getReportSenderChannel(sender);
+			if (!latestReportData) return;
 			const button = document.querySelector("#report-button");
+			const status = document.querySelector("#report-status");
+			const report = {
+				...latestReportData,
+				sender: latestReportData.sender || "",
+				createdAt: latestReportData.createdAt || new Date().toISOString()
+			};
 			button.disabled = true;
+			status.textContent = "Saving analysis to Firestore...";
 			try {
-				if (reportTarget) {
-					document.querySelector("#report-status").textContent = reportTarget.type === "email"
-						? "Opening the sender's official report email..."
-						: "Opening the sender's official report phone number...";
-					openContactTarget({ type: reportTarget.type, value: reportTarget.value });
-				}
-				await apiRequest("/api/reports", { method: "POST", body: JSON.stringify({ ...latestReportData, sender, createdAt: latestReportData?.createdAt || new Date().toISOString() }) });
+				await apiRequest("/api/reports", { method: "POST", body: JSON.stringify(report) });
 				await loadReports();
-				document.querySelector("#report-status").textContent = reportTarget
-					? `${reportTarget.type === "email" ? "Report email opened and saved locally." : "Report phone opened and saved locally."}`
-					: "Saved to this Sentinel server. Not sent to a public threat database.";
+				status.textContent = "Analysis saved to history. The full message was not stored.";
+				button.textContent = "Saved to history";
 			} catch (error) {
-				document.querySelector("#report-status").textContent = `Report not saved: ${error.message}`;
-			} finally {
+				status.textContent = `Report not saved: ${error.message}`;
 				button.disabled = false;
 			}
 		});

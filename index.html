@@ -95,6 +95,11 @@
 		.result-score { color: var(--muted); font: 10px var(--mono); }
 		.analysis-time { margin: 5px 0 0 37px; color: var(--muted); font: 10px var(--mono); }
 		.result-summary { margin: 9px 0 0 37px; color: var(--muted-strong); font-size: 12px; line-height: 1.65; }
+		.analyzed-message { margin: 13px 0 0 37px; padding: 10px 12px; border-left: 2px solid var(--line); background: rgba(255,255,255,.025); }
+		.analyzed-message-heading { color: var(--muted); font: 9px var(--mono); }
+		.analyzed-message-text { margin: 7px 0 0; color: var(--muted-strong); font-size: 11px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+		.analyzed-message mark { padding: 1px 2px; border-radius: 2px; background: rgba(243,196,118,.22); color: var(--text); box-shadow: inset 0 -1px var(--amber); }
+		.analyzed-message mark.analyzed-match-danger { background: rgba(255,139,157,.2); box-shadow: inset 0 -1px var(--red); }
 		.signals { display: grid; gap: 7px; margin: 13px 0 0 37px; padding: 0; list-style: none; }
 		.signals li { display: grid; gap: 4px; padding: 10px 11px; border-left: 2px solid var(--amber); background: rgba(243,196,118,.06); color: var(--muted); font-size: 11px; line-height: 1.55; }
 		.signals li.signal-danger { border-color: var(--red); background: rgba(255,139,157,.06); }
@@ -364,6 +369,7 @@
 						<div class="result-score" id="result-score"></div>
 						<div class="analysis-time" id="analysis-time"></div>
 						<p class="result-summary" id="result-summary"></p>
+						<section class="analyzed-message" id="analyzed-message" aria-label="Analyzed message" hidden></section>
 						<ul class="signals" id="signals"></ul>
 						<div class="sender-result" id="sender-result"></div>
 						<div class="report-actions"><button class="secondary" id="report-button" type="button" hidden>Save analysis to history</button><span class="report-status" id="report-status" aria-live="polite">Reports are saved only when you choose to save them.</span></div>
@@ -478,7 +484,11 @@
 			entry.domains = officialEntryDomains(entry);
 		});
 		window.initialOfficialDirectory = officialDirectory;
-		window.firebaseStoreLoaded = import("./firebase-store.js");
+		window.firebaseStoreLoaded = null;
+		function ensureFirebaseStore(){
+			if(!window.firebaseStoreLoaded)window.firebaseStoreLoaded=import("./firebase-store.js");
+			return window.firebaseStoreLoaded;
+		}
 		function normalizeSavedContactEntry(contact) {
 			const mainDomain = normalizeDomain(contact.main_domain || contact.source || "");
 			return {
@@ -497,8 +507,31 @@
 		function verifiedSourceEntries() {
 			return officialDirectory.filter(entry => Array.isArray(entry.domains) && entry.domains.length);
 		}
-		let apiOnline=false, urlscanConfigured=false, contacts=[], reports=[], latestReport=null, previewUrl="", safePreviewMarkup="";
-		async function apiRequest(path,options={}){if(path==="/api/preview")safePreviewMarkup="";if(/^\/api\/(?:contacts|directory|reports)(?:\/|$)/.test(path)){await window.firebaseStoreLoaded;try{return await window.firebaseDataRequest(path,options);}catch(error){if(["permission-denied","auth/operation-not-allowed"].includes(error.code))throw new Error("Firestore denied access. Enable Anonymous sign-in and publish firestore.rules.");throw error;}}const response=await fetch(path,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})},cache:"no-store"});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||`Request failed (${response.status}).`);if(path==="/api/preview")safePreviewMarkup=data.safeHtml||"";return data;}
+		let apiOnline=false, urlscanConfigured=false, localDatabaseAvailable=false, contacts=[], reports=[], latestReport=null, previewUrl="", safePreviewMarkup="";
+		async function apiRequest(path,options={}){
+			if(path==="/api/preview")safePreviewMarkup="";
+			const isStoredDataPath=/^\/api\/(?:contacts|directory|reports)(?:\/|$)/.test(path);
+			const requestOptions={...options,headers:{"Content-Type":"application/json",...(options.headers||{})},cache:"no-store"};
+			if(isStoredDataPath){
+				let response;
+				try{response=await fetch(path,requestOptions);}catch{}
+				if(response){
+					const data=await response.json().catch(()=>null);
+					if(response.ok&&data)return data;
+					if(response.status!==404)throw new Error(data?.message||`Request failed (${response.status}).`);
+				}
+				await ensureFirebaseStore();
+				try{return await window.firebaseDataRequest(path,options);}catch(error){
+					if(["permission-denied","auth/operation-not-allowed"].includes(error.code))throw new Error("Firestore denied access. Enable Anonymous sign-in and publish firestore.rules.");
+					throw error;
+				}
+			}
+			const response=await fetch(path,requestOptions);
+			const data=await response.json().catch(()=>({}));
+			if(!response.ok)throw new Error(data.message||`Request failed (${response.status}).`);
+			if(path==="/api/preview")safePreviewMarkup=data.safeHtml||"";
+			return data;
+		}
 		function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;}
 		function updatePreviewButton(){const urls=messageInput.value.match(urlPattern)||[];urlPattern.lastIndex=0;document.querySelector("#preview-link-button").disabled=!apiOnline||!urls.length;document.querySelector("#visual-preview-button").disabled=!apiOnline||!urlscanConfigured||!urls.length;if(apiOnline&&urls.length)document.querySelector("#remote-scan-status").textContent=urlscanConfigured?"Text preview and visual sandbox are available after consent.":"Text preview is available after consent. Visual screenshots need URLSCAN_API_KEY on the server.";}
 		function renderDirectory(){
@@ -594,7 +627,7 @@
 				}
 				await loadContacts();
 				resetContactEditor();
-				setContactStatus(`Saved ${organization}. ${values.length} ${type === "email" ? "email" : "phone"} ${values.length === 1 ? "entry" : "entries"} were saved to Firestore.`);
+				setContactStatus(`Saved ${organization}. ${values.length} ${type === "email" ? "email" : "phone"} ${values.length === 1 ? "entry" : "entries"} were saved to ${localDatabaseAvailable?"this device":"Firestore"}.`);
 			} catch (error) {
 				setContactStatus(`Could not save contact: ${error.message}`, true);
 			}
@@ -677,7 +710,28 @@
 		function renderReports(){const list=document.querySelector("#saved-reports");list.replaceChildren();document.querySelector("#reports-count").textContent=`${reports.length} SAVED`;if(!reports.length)list.append(el("div","empty-contacts","No reports saved yet."));for(const report of reports){const card=el("article","report-card"),body=document.createElement("div");body.append(el("div","report-card-title",`${report.risk.toUpperCase()} / ${report.hosts.join(", ")||"No link hostname"}`),el("div","report-card-meta",new Date(report.createdAt).toLocaleString()));const details=el("ul","report-card-signals");for(const finding of report.findings)details.append(el("li","",finding));body.append(details);card.append(body);list.append(card);}}
 		async function loadContacts(){contacts=(await apiRequest("/api/contacts")).contacts;renderContacts();renderOfficialTrustedContacts();renderDirectory();renderSenderMatch();}async function loadReports(){reports=(await apiRequest("/api/reports")).reports;renderReports();}
 		function firestoreSetupMessage(error){if(error.code==="auth/configuration-not-found")return"Set up Firebase Authentication in the Firebase Console, enable Anonymous sign-in, create a Firestore database, publish firestore.rules, then reload.";if(error.code==="auth/admin-restricted-operation")return"Enable Anonymous sign-in in Firebase Authentication, then reload to copy saved contacts and the directory into Firestore.";if(error.code==="permission-denied")return"Firestore denied access. Deploy firestore.rules, then reload.";if(error.code==="auth/unauthorized-domain")return"Add this app's host under Firebase Authentication > Settings > Authorized domains.";return`Could not connect to Firestore: ${error.message}`;}
-		async function initializeApi(){try{await window.firebaseStoreLoaded;await window.firebaseStoreReady;document.querySelector("#server-status").replaceChildren(el("span","status-dot",""),document.createTextNode(" FIRESTORE READY"));try{const health=await apiRequest("/api/health");apiOnline=health.status==="ok";urlscanConfigured=Boolean(health.urlscanConfigured);}catch{apiOnline=false;urlscanConfigured=false;}document.querySelector("#remote-scan-status").textContent=apiOnline?(urlscanConfigured?"Text preview and visual sandbox are available after consent.":"Text preview is available after consent. Visual screenshots need URLSCAN_API_KEY on the server."):"Remote link preview is unavailable; local message analysis and Firestore saving are ready.";const directoryData=await apiRequest("/api/directory");if(directoryData.entries.length){officialDirectory.splice(0,officialDirectory.length,...directoryData.entries);}else{await apiRequest("/api/directory",{method:"PUT",body:JSON.stringify({entries:officialDirectory})});}await Promise.all([loadContacts(),loadReports()]);}catch(error){apiOnline=false;urlscanConfigured=false;document.querySelector("#server-status").textContent="FIRESTORE SETUP REQUIRED";document.querySelector(".contact-footnote").textContent=firestoreSetupMessage(error);}updatePreviewButton();}
+		async function initializeApi(){
+			try{
+				try{
+					const health=await apiRequest("/api/health");
+					apiOnline=health.status==="ok";
+					localDatabaseAvailable=apiOnline;
+					urlscanConfigured=Boolean(health.urlscanConfigured);
+				}catch{apiOnline=false;urlscanConfigured=false;}
+				if(!localDatabaseAvailable){await ensureFirebaseStore();await window.firebaseStoreReady;}
+				document.querySelector("#server-status").replaceChildren(el("span","status-dot",""),document.createTextNode(localDatabaseAvailable?" LOCAL DATABASE READY":" FIRESTORE READY"));
+				document.querySelector("#remote-scan-status").textContent=apiOnline?(urlscanConfigured?"Text preview and visual sandbox are available after consent.":"Text preview is available after consent. Visual screenshots need URLSCAN_API_KEY on the server."):"Remote link preview is unavailable; local message analysis and saving are ready.";
+				const directoryData=await apiRequest("/api/directory");
+				if(directoryData.entries.length)officialDirectory.splice(0,officialDirectory.length,...directoryData.entries);
+				else await apiRequest("/api/directory",{method:"PUT",body:JSON.stringify({entries:officialDirectory})});
+				await Promise.all([loadContacts(),loadReports()]);
+			}catch(error){
+				apiOnline=false;urlscanConfigured=false;
+				document.querySelector("#server-status").textContent=localDatabaseAvailable?"LOCAL DATABASE ERROR":"FIRESTORE SETUP REQUIRED";
+				document.querySelector(".contact-footnote").textContent=localDatabaseAvailable?`Could not load saved data: ${error.message}`:firestoreSetupMessage(error);
+			}
+			updatePreviewButton();
+		}
 		function updateReportButtonState(){const button=document.querySelector("#report-button");if(!button)return;button.hidden=!latestReport;button.disabled=false;button.textContent="Save analysis to history";document.querySelector("#report-status").textContent=latestReport?"Manual save stores the sender, findings, and link domains. The full message is not saved.":"Reports are saved only when you choose to save them.";}
 		function scanMessage(){const value=messageInput.value.trim(),findings=[];if(/password|otp|one.time code|pin|cvv/i.test(value))findings.push("The message mentions an OTP, password, PIN, or CVV. Never share these details.");if(/urgent|immediately|act now|account.{0,20}(locked|suspended)/i.test(value))findings.push("Urgent wording can pressure you to act before verifying independently.");if(/bit\.ly|tinyurl|t\.co/i.test(value))findings.push("A shortened link hides its destination.");if(/\.(exe|scr|bat|cmd|msi|js|vbs|ps1)(?:\b|$)/i.test(value))findings.push("The message refers to an executable or script attachment.");result.className=`result visible ${findings.length?"verdict-warning":"verdict-clear"}`;document.querySelector("#result-title").textContent=findings.length?"Review this message":"No common warning patterns found";document.querySelector("#result-icon").textContent=findings.length?"!":"✓";document.querySelector("#risk-label").textContent=findings.length?"REVIEW":"NO FLAGS*";document.querySelector("#result-score").textContent=`${findings.length} warning signal${findings.length===1?"":"s"}`;document.querySelector("#analysis-time").textContent=`Analyzed ${new Date().toLocaleString()}`;document.querySelector("#result-summary").textContent="Pattern checks are not proof of fraud or safety. Verify unexpected requests through an official channel.";const signals=document.querySelector("#signals");signals.replaceChildren();for(const finding of findings.length?findings:["No matching warning patterns found."])signals.append(el("li","",finding));const urls=value.match(urlPattern)||[];urlPattern.lastIndex=0;latestReport={risk:findings.length?"warning":"clear",findings,hosts:urls.map(raw=>{try{return new URL(/^https?:/i.test(raw)?raw:`https://${raw}`).hostname;}catch{return "";}}).filter(Boolean)};document.querySelector("#remote-result").hidden=true;document.querySelector("#remote-scan-status").textContent=urls.length?"Text preview is ready after consent. The page is fetched by this server.":"Paste a link to enable text preview.";updatePreviewButton();}
 		function inspectSender(sender, messageText=""){
@@ -750,9 +804,53 @@
 			return true;
 		}
 		function looksLikeOfficialDomainVariant(candidate,official){
-			const candidateLabels=normalizeDomain(candidate).split(".");
-			const officialLabels=normalizeDomain(official).split(".");
-			return candidateLabels.some(candidateLabel=>candidateLabel.length>=4&&officialLabels.some(officialLabel=>officialLabel.length>=4&&candidateLabel!==officialLabel&&editDistanceAtMostOne(candidateLabel,officialLabel)));
+			const candidateDomain=normalizeDomain(candidate),officialDomain=normalizeDomain(official);
+			if(!candidateDomain||!officialDomain||candidateDomain===officialDomain||matchesDomain(candidateDomain,officialDomain))return false;
+			const officialRoot=officialDomain.split(".")[0].replace(/0/g,"o").replace(/1/g,"l").replace(/3/g,"e").replace(/5/g,"s").replace(/8/g,"b");
+			if(officialRoot.length<3)return false;
+			return candidateDomain.split(".").some(label=>{
+				const normalized=label.replace(/0/g,"o").replace(/1/g,"l").replace(/3/g,"e").replace(/5/g,"s").replace(/8/g,"b").replace(/[^a-z0-9]/g,"");
+				return normalized===officialRoot||normalized.startsWith(officialRoot)||normalized.endsWith(officialRoot)||(officialRoot.length>=4&&editDistanceAtMostOne(normalized,officialRoot));
+			});
+		}
+		function renderAnalyzedMessage(value,findings){
+			const container=document.querySelector("#analyzed-message");
+			container.replaceChildren();
+			if(!value){container.hidden=true;return;}
+			container.hidden=false;
+			const ranges=[];
+			for(const finding of findings){
+				const evidence=String(finding.evidence||"").trim();
+				if(!evidence)continue;
+				let start=0,occurrences=0;
+				while((start=value.indexOf(evidence,start))!==-1&&occurrences<20){
+					ranges.push({start,end:start+evidence.length,title:finding.title,danger:finding.severity==="danger"});
+					start+=Math.max(1,evidence.length);
+					occurrences++;
+				}
+			}
+			ranges.sort((left,right)=>left.start-right.start||right.end-left.end);
+			const merged=[];
+			for(const range of ranges){
+				const previous=merged[merged.length-1];
+				if(previous&&range.start<previous.end){
+					previous.end=Math.max(previous.end,range.end);
+					previous.titles.add(range.title);
+					previous.danger=previous.danger||range.danger;
+				}else merged.push({...range,titles:new Set([range.title])});
+			}
+			container.append(el("div","analyzed-message-heading",merged.length?`MESSAGE REVIEW / ${merged.length} MATCHED EXCERPT${merged.length===1?"":"S"}: HOVER TO SEE WHY`:"MESSAGE REVIEW / NO EXACT EXCERPT MATCHED"));
+			const message=el("p","analyzed-message-text"),appendText=text=>message.append(document.createTextNode(text));
+			let cursor=0;
+			for(const range of merged){
+				appendText(value.slice(cursor,range.start));
+				const match=el("mark",range.danger?"analyzed-match-danger":"",value.slice(range.start,range.end));
+				match.title=[...range.titles].join(" / ");
+				message.append(match);
+				cursor=range.end;
+			}
+			appendText(value.slice(cursor));
+			container.append(message);
 		}
 		function scanMessage(){
 			const value=messageInput.value.trim(),sender=document.querySelector("#sender-input").value.trim(),findings=[];
@@ -823,6 +921,7 @@
 			const linkSummary=detectedUrls.length?`${linkCountLabel}: ${linkHosts.join(", ")||"destination unavailable"}. Parsed locally only; the page was not opened.`:"No links were found in the pasted message.";
 			const sentenceCount=value.split(/(?<=[.!?])\s+|\n/).filter(Boolean).length;
 			document.querySelector("#result-summary").textContent=`${resultSummary} Message text: ${value.length} characters across ${sentenceCount} sentence${sentenceCount===1?"":"s"}. ${linkSummary}`;
+			renderAnalyzedMessage(value,findings);
 			const signals=document.querySelector("#signals");signals.replaceChildren();
 			if(findings.length){for(const finding of findings){const item=el("li",finding.severity==="danger"?"signal-danger":finding.severity==="info"?"signal-info":""),details=el("div","");item.append(el("strong","",finding.title),el("div","",`Evidence: “${finding.evidence}”`),el("div","",finding.why),el("div","signal-next",`Next step: ${finding.next}`));signals.append(item);}}
 			else signals.append(el("li","","No request for credentials, urgent threat, payment lure, shortened link, or unmatched sender pattern was detected."));
@@ -982,31 +1081,20 @@
 				return mainDomain && matchesDomain(senderDomain, mainDomain);
 			});
 			const exactMatch=savedMatch || officialMatch || trustedSourceMatch || officialDomainEntry || sameMainDomainMatch;
-			const identity=email?`${displayName} ${normalizedEmail.split("@")[0]}`:`${displayName} ${sender}`;
-			const identityTokens=identity.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 			const genericWords=new Set(["bank","philippines","the","official","support","service","services","unibank","consumer","assistance","department","public","office","center","help","contact","customer","care","inquiry","inquiries","information","online","account","security","alert","alerts","notification","notifications","admin","team","mail","email","noreply","info","news","media","com","net","org","gov","edu","mil","int","app"]);
 			const aliasesFor=entry=>entry.organization.toLowerCase().split(/[^a-z0-9]+/).filter(word=>word.length>=3&&!genericWords.has(word));
-			const claimsBrand=entry=>aliasesFor(entry).some(alias=>identityTokens.some(token=>token===alias||(alias.length>=4&&token.startsWith(alias))));
-			const officialDomainsFor=entry=>[...entry.emails.map(address=>address.split("@").pop()),sourceDomain(entry.source),sourceDomain(entry.portal),...(entry.note?.match(/@[a-z0-9.-]+\.[a-z]{2,}/gi)||[])].filter(Boolean);
+			const officialDomainsFor=entry=>[entry.mainDomain,...(entry.domains||[]),...(entry.emails||[]).map(address=>address.split("@").pop()),sourceDomain(entry.source),sourceDomain(entry.portal),...(entry.note?.match(/@[a-z0-9.-]+\.[a-z]{2,}/gi)||[]).map(address=>address.slice(1).replace(/[.,;]+$/, ""))].map(normalizeDomain).filter(Boolean);
 			const claimsBrandInMessage = entry => {
 				const text=(messageText||"").toLowerCase();
 				if(!text)return false;
 				const tokens=aliasesFor(entry).map(token => token.toLowerCase());
 				return tokens.some(token => token.length >= 3 && text.includes(token));
 			};
-			const claimedEntry=referenceEntries.find(entry=>claimsBrand(entry));
 			const copiedDomainEntry=!exactMatch&&email&&referenceEntries.find(entry => {
 				const hosts = officialDomainsFor(entry);
 				return hosts.some(domain => looksLikeOfficialDomainVariant(senderDomain, domain));
 			});
-			const spoofedDomainEntry=!exactMatch&&email&&referenceEntries.find(entry=>aliasesFor(entry).some(alias=>senderDomain.split(".").some(label=>{
-				const normalized=label.replace(/0/g,"o").replace(/1/g,"l").replace(/3/g,"e").replace(/5/g,"s").replace(/8/g,"b").replace(/[^a-z0-9]/g,"");
-				if(normalized===alias)return true;
-				if(alias.length<4||!(normalized.startsWith(alias)||normalized.endsWith(alias)||editDistanceAtMostOne(normalized,alias)))return false;
-				return true;
-			}))&&!officialDomainsFor(entry).some(domain=>matchesDomain(senderDomain,domain)));
-			const claimedDomainIsOfficial=claimedEntry&&email&&officialDomainsFor(claimedEntry).some(domain=>matchesDomain(senderDomain,domain));
-			const impersonated=claimedEntry&&!(claimedDomainIsOfficial||(!email&&exactMatch))?claimedEntry:(copiedDomainEntry||spoofedDomainEntry);
+			const impersonated=copiedDomainEntry;
 			if(impersonated){
 				const officialDomain=officialDomainsFor(impersonated)[0]||"the official contact page";
 				const copiedDomainReason = copiedDomainEntry && looksLikeOfficialDomainVariant(senderDomain, officialDomain) && senderDomain !== officialDomain ? `The sender uses ${senderDomain}, which is a close copy of ${officialDomain}, not the genuine official domain.` : `The sender appears to use ${impersonated.organization}'s name, but the part after @ is ${senderDomain}, not a listed official address such as ${officialDomain}.`;
@@ -1073,7 +1161,7 @@
 			const button=document.querySelector("#report-button"),status=document.querySelector("#report-status");
 			const report={...latestReport,sender:document.querySelector("#sender-input").value.trim(),createdAt:new Date().toISOString()};
 			button.disabled=true;
-			status.textContent="Saving analysis to Firestore...";
+			status.textContent=localDatabaseAvailable?"Saving analysis to this device...":"Saving analysis to Firestore...";
 			try{
 				await apiRequest("/api/reports",{method:"POST",body:JSON.stringify(report)});
 				await loadReports();
